@@ -52,11 +52,15 @@ pub fn render(f: &mut Frame, app: &App) {
                 )
                 .style(Style::default());
 
-            let help = Paragraph::new(
-                "↑↓ to navigate, Enter to stage/unstage, 'y' to proceed, 'n' to abort",
-            )
-            .style(Style::default().fg(Color::Yellow))
-            .wrap(Wrap { trim: true });
+            let help = if app.staged_files_set.is_empty() {
+                Paragraph::new("⚠️ No files staged - stage at least one file to proceed")
+                    .style(Style::default().fg(Color::Red))
+                    .wrap(Wrap { trim: true })
+            } else {
+                Paragraph::new("↑↓ to navigate, Enter to stage/unstage, 'y' to proceed, 'n' to abort")
+                    .style(Style::default().fg(Color::Yellow))
+                    .wrap(Wrap { trim: true })
+            };
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)

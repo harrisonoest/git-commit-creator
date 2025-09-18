@@ -78,13 +78,7 @@ pub struct App {
 impl App {
     /// Creates new App instance with initial state based on CLI arguments
     fn new(prefix: Option<String>, message: Option<String>, no_push: bool) -> Self {
-        let state = if prefix.is_some() && message.is_some() {
-            AppState::StagedFilesReview
-        } else if prefix.is_some() {
-            AppState::StagedFilesReview
-        } else {
-            AppState::StagedFilesReview
-        };
+        let state = AppState::StagedFilesReview;
 
         let cursor_pos = message.as_ref().map_or(0, |m| m.len());
 

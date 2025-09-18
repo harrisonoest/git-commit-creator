@@ -104,6 +104,10 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 }
             }
             KeyCode::Char('y') | KeyCode::Char('Y') => {
+                if app.staged_files_set.is_empty() {
+                    // Don't proceed if no files are staged
+                    return;
+                }
                 app.should_proceed = true;
                 if app.prefix.is_some() && app.message.is_some() {
                     app.should_quit = true;

@@ -67,28 +67,6 @@ pub fn get_all_changed_files(repo: &Repository) -> Result<(Vec<String>, Vec<Stri
     Ok((all_files, staged_files))
 }
 
-/// Returns list of files currently staged for commit
-pub fn get_staged_files(repo: &Repository) -> Result<Vec<String>> {
-    let mut opts = StatusOptions::new();
-    opts.include_ignored(false);
-
-    let statuses = repo.statuses(Some(&mut opts))?;
-    let mut staged_files = Vec::new();
-
-    for entry in statuses.iter() {
-        if entry
-            .status()
-            .intersects(Status::INDEX_NEW | Status::INDEX_MODIFIED | Status::INDEX_DELETED)
-        {
-            if let Some(path) = entry.path() {
-                staged_files.push(path.to_string());
-            }
-        }
-    }
-
-    Ok(staged_files)
-}
-
 /// Stages files based on extensions and/or directory filters
 pub fn stage_files(extensions: Option<String>, directory: Option<String>) -> Result<()> {
     let mut cmd = Command::new("git");
