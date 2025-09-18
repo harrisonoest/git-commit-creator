@@ -2,9 +2,9 @@
 set -e
 
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <version>"
-    echo "Example: $0 0.1.1"
-    exit 1
+  echo "Usage: $0 <version>"
+  echo "Example: $0 0.1.1"
+  exit 1
 fi
 
 VERSION=$1
@@ -18,4 +18,5 @@ git commit -m "chore: bump version to $VERSION"
 git tag "v$VERSION"
 
 echo "Version bumped to $VERSION"
-echo "Run 'git push origin main --tags' to trigger release"
+echo "Pushing tags to master"
+git push origin master --tags
