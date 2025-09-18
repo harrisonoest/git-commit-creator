@@ -1,7 +1,16 @@
 [package]
 name = "gitcc"
-version = "0.1.0"
-edition = "2024"
+version = "1.0.0"
+edition = "2021"
+authors = ["Harrison Oest <harrison.oest@gmail.com>"]
+description = "A beautiful command-line tool for streamlined git operations with interactive TUI"
+license = "MIT"
+repository = "https://github.com/harrisonoest/gitcc"
+homepage = "https://github.com/harrisonoest/gitcc"
+documentation = "https://github.com/harrisonoest/gitcc"
+keywords = ["git", "cli", "tui", "commit", "conventional-commits"]
+categories = ["command-line-utilities", "development-tools"]
+readme = "README.md"
 
 [dependencies]
 ratatui = "0.28"

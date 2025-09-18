@@ -17,10 +17,16 @@ A beautiful command-line tool built with Rust and `ratatui` for streamlined git 
 - Rust 1.70+ 
 - Git repository
 
+### Install from crates.io
+
+```bash
+cargo install gitcc
+```
+
 ### Build from Source
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/harrisonoest/gitcc
 cd gitcc
 cargo build --release
 ```
@@ -162,7 +168,7 @@ cargo test
 
 ## License
 
-[Add your license here]
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
