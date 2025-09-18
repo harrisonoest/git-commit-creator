@@ -6,7 +6,7 @@ use crate::{App, AppState, COMMIT_PREFIXES};
 fn delete_word_backward(text: &mut String, cursor_pos: &mut usize) {
     let chars: Vec<char> = text.chars().collect();
     let start_pos = find_prev_word(text, *cursor_pos);
-    
+
     if start_pos < *cursor_pos {
         let mut new_chars = chars;
         new_chars.drain(start_pos..*cursor_pos);
@@ -19,18 +19,18 @@ fn delete_word_backward(text: &mut String, cursor_pos: &mut usize) {
 fn delete_word_forward(text: &mut String, cursor_pos: &mut usize) {
     let chars: Vec<char> = text.chars().collect();
     let mut pos = *cursor_pos;
-    
+
     // Skip current whitespace
     while pos < chars.len() && chars[pos] == ' ' {
         pos += 1;
     }
-    
+
     // Delete word characters
     let start_pos = pos;
     while pos < chars.len() && chars[pos] != ' ' {
         pos += 1;
     }
-    
+
     if start_pos < pos {
         let mut new_chars = chars;
         new_chars.drain(start_pos..pos);
@@ -42,17 +42,17 @@ fn delete_word_forward(text: &mut String, cursor_pos: &mut usize) {
 fn find_next_word(text: &str, cursor_pos: usize) -> usize {
     let chars: Vec<char> = text.chars().collect();
     let mut pos = cursor_pos;
-    
+
     // Skip current word
     while pos < chars.len() && chars[pos] != ' ' {
         pos += 1;
     }
-    
+
     // Skip whitespace
     while pos < chars.len() && chars[pos] == ' ' {
         pos += 1;
     }
-    
+
     pos
 }
 
@@ -62,19 +62,19 @@ fn find_prev_word(text: &str, cursor_pos: usize) -> usize {
     if cursor_pos == 0 {
         return 0;
     }
-    
+
     let mut pos = cursor_pos.saturating_sub(1);
-    
+
     // Skip current whitespace
     while pos > 0 && chars[pos] == ' ' {
         pos = pos.saturating_sub(1);
     }
-    
+
     // Skip to start of word
     while pos > 0 && chars[pos.saturating_sub(1)] != ' ' {
         pos = pos.saturating_sub(1);
     }
-    
+
     pos
 }
 
@@ -82,6 +82,27 @@ fn find_prev_word(text: &str, cursor_pos: usize) -> usize {
 pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
     match app.state {
         AppState::StagedFilesReview => match key {
+            KeyCode::Up => {
+                if app.selected_file_index > 0 {
+                    app.selected_file_index -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if app.selected_file_index < app.all_files.len().saturating_sub(1) {
+                    app.selected_file_index += 1;
+                }
+            }
+            KeyCode::Enter => {
+                if let Some(file) = app.all_files.get(app.selected_file_index) {
+                    if app.staged_files_set.contains(file) {
+                        let _ = crate::git::unstage_file(file);
+                        app.staged_files_set.remove(file);
+                    } else {
+                        let _ = crate::git::stage_file(file);
+                        app.staged_files_set.insert(file.clone());
+                    }
+                }
+            }
             KeyCode::Char('y') | KeyCode::Char('Y') => {
                 app.should_proceed = true;
                 if app.prefix.is_some() && app.message.is_some() {
@@ -137,7 +158,9 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 }
             }
             KeyCode::Backspace => {
-                if modifiers.contains(KeyModifiers::CONTROL) || modifiers.contains(KeyModifiers::ALT) {
+                if modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT)
+                {
                     delete_word_backward(&mut app.commit_message, &mut app.cursor_position);
                 } else if app.cursor_position > 0 {
                     app.cursor_position -= 1;
@@ -152,14 +175,18 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 }
             }
             KeyCode::Left => {
-                if modifiers.contains(KeyModifiers::CONTROL) || modifiers.contains(KeyModifiers::ALT) {
+                if modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT)
+                {
                     app.cursor_position = find_prev_word(&app.commit_message, app.cursor_position);
                 } else if app.cursor_position > 0 {
                     app.cursor_position -= 1;
                 }
             }
             KeyCode::Right => {
-                if modifiers.contains(KeyModifiers::CONTROL) || modifiers.contains(KeyModifiers::ALT) {
+                if modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT)
+                {
                     app.cursor_position = find_next_word(&app.commit_message, app.cursor_position);
                 } else if app.cursor_position < app.commit_message.len() {
                     app.cursor_position += 1;

@@ -70,6 +70,9 @@ pub struct App {
     pub no_push: bool,
     pub cursor_visible: bool,
     pub cursor_position: usize,
+    pub selected_file_index: usize,
+    pub all_files: Vec<String>,
+    pub staged_files_set: std::collections::HashSet<String>,
 }
 
 impl App {
@@ -84,7 +87,7 @@ impl App {
         };
 
         let cursor_pos = message.as_ref().map_or(0, |m| m.len());
-        
+
         Self {
             state,
             staged_files: Vec::new(),
@@ -97,6 +100,9 @@ impl App {
             no_push,
             cursor_visible: true,
             cursor_position: cursor_pos,
+            selected_file_index: 0,
+            all_files: Vec::new(),
+            staged_files_set: std::collections::HashSet::new(),
         }
     }
 }
@@ -136,7 +142,7 @@ async fn main() -> Result<()> {
     }
 
     git::stage_files(cli.extensions, cli.directory)?;
-    let staged_files = git::get_staged_files(&repo)?;
+    let (all_files, staged_files) = git::get_all_changed_files(&repo)?;
 
     if staged_files.is_empty() {
         println!("❌ No files staged. Aborting.");
@@ -150,7 +156,9 @@ async fn main() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new(cli.prefix, cli.message, cli.no_push);
-    app.staged_files = staged_files;
+    app.all_files = all_files;
+    app.staged_files = staged_files.clone();
+    app.staged_files_set = staged_files.into_iter().collect();
 
     let result = run_app(&mut terminal, app);
 

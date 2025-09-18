@@ -31,6 +31,42 @@ pub fn has_changes(repo: &Repository) -> Result<bool> {
     Ok(true)
 }
 
+/// Returns all changed files (staged and unstaged) and list of staged files
+pub fn get_all_changed_files(repo: &Repository) -> Result<(Vec<String>, Vec<String>)> {
+    let mut opts = StatusOptions::new();
+    opts.include_ignored(false);
+
+    let statuses = repo.statuses(Some(&mut opts))?;
+    let mut all_files = Vec::new();
+    let mut staged_files = Vec::new();
+
+    for entry in statuses.iter() {
+        if let Some(path) = entry.path() {
+            let path_str = path.to_string();
+
+            if entry.status().intersects(
+                Status::WT_NEW
+                    | Status::WT_MODIFIED
+                    | Status::WT_DELETED
+                    | Status::INDEX_NEW
+                    | Status::INDEX_MODIFIED
+                    | Status::INDEX_DELETED,
+            ) {
+                all_files.push(path_str.clone());
+            }
+
+            if entry
+                .status()
+                .intersects(Status::INDEX_NEW | Status::INDEX_MODIFIED | Status::INDEX_DELETED)
+            {
+                staged_files.push(path_str);
+            }
+        }
+    }
+
+    Ok((all_files, staged_files))
+}
+
 /// Returns list of files currently staged for commit
 pub fn get_staged_files(repo: &Repository) -> Result<Vec<String>> {
     let mut opts = StatusOptions::new();
@@ -149,6 +185,36 @@ pub fn commit_and_push(commit_msg: &str, no_push: bool) -> Result<()> {
         }
 
         println!("🚀 Pushed to remote");
+    }
+
+    Ok(())
+}
+
+/// Stages a single file
+pub fn stage_file(file_path: &str) -> Result<()> {
+    let output = Command::new("git").args(["add", file_path]).output()?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "Failed to stage file: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    Ok(())
+}
+
+/// Unstages a single file
+pub fn unstage_file(file_path: &str) -> Result<()> {
+    let output = Command::new("git")
+        .args(["reset", "HEAD", "--", file_path])
+        .output()?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "Failed to unstage file: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     Ok(())

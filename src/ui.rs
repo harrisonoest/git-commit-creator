@@ -27,22 +27,36 @@ pub fn render(f: &mut Frame, app: &App) {
     match app.state {
         AppState::StagedFilesReview => {
             let items: Vec<ListItem> = app
-                .staged_files
+                .all_files
                 .iter()
-                .map(|f| ListItem::new(format!("• {f}")))
+                .enumerate()
+                .map(|(i, f)| {
+                    let is_staged = app.staged_files_set.contains(f);
+                    let prefix = if is_staged { "[S]" } else { "[ ]" };
+                    let style = if i == app.selected_file_index {
+                        Style::default().bg(Color::Blue).fg(Color::White)
+                    } else if is_staged {
+                        Style::default().fg(Color::Green)
+                    } else {
+                        Style::default().fg(Color::Yellow)
+                    };
+                    ListItem::new(format!("{prefix} {f}")).style(style)
+                })
                 .collect();
 
             let files_list = List::new(items)
                 .block(
                     Block::default()
-                        .title("🗂️ Staged Files")
+                        .title("📁 Files (Enter to stage/unstage)")
                         .borders(Borders::ALL),
                 )
-                .style(Style::default().fg(Color::Cyan));
+                .style(Style::default());
 
-            let help = Paragraph::new("Press 'y' to proceed, 'n' to abort")
-                .style(Style::default().fg(Color::Yellow))
-                .wrap(Wrap { trim: true });
+            let help = Paragraph::new(
+                "↑↓ to navigate, Enter to stage/unstage, 'y' to proceed, 'n' to abort",
+            )
+            .style(Style::default().fg(Color::Yellow))
+            .wrap(Wrap { trim: true });
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)
