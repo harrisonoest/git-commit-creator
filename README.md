@@ -8,7 +8,6 @@ A beautiful command-line tool built with Rust and `ratatui` for streamlined git 
 - 📝 **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
 - 🎯 **Selective Staging** - Stage files by extension or directory
 - 🔍 **File Preview** - Review staged files before committing
-- 🎫 **ROKU Ticket Support** - Automatic ticket extraction from branch names
 - ⚡ **Fast & Efficient** - Built in Rust for performance
 
 ## Installation
@@ -78,13 +77,6 @@ The tool supports conventional commit prefixes:
 - `refactor:` - Code refactoring
 - `test:` - Test additions/changes
 - `chore:` - Maintenance tasks
-- `ROKU-` - Special prefix for ROKU tickets (extracts ticket number from branch)
-
-## ROKU Ticket Integration
-
-When selecting `ROKU-` prefix, the tool automatically:
-1. Extracts ticket number from current branch name (e.g., `feature/ROKU-12345-new-feature`)
-2. Uses the ticket number as prefix (e.g., `ROKU-12345: your message`)
 
 ## TUI Controls
 
@@ -127,20 +119,12 @@ gitcc -d "src/" -p "feat:" -m "add new module"
 gitcc -d "tests/" -e "rs" -p "test:" -m "add integration tests"
 ```
 
-### ROKU Workflow
-```bash
-# On branch: feature/ROKU-12345-user-auth
-gitcc -p "ROKU-" -m "implement user authentication"
-# Results in commit: "ROKU-12345: implement user authentication"
-```
-
 ## Error Handling
 
 The tool provides clear error messages for common issues:
 - Not in a git repository
 - No files staged
 - Failed git operations
-- Invalid ROKU ticket extraction
 
 If an error occurs, all staged changes are automatically unstaged to maintain a clean git state.
 
@@ -162,7 +146,6 @@ src/
 - `git2` - Git operations
 - `tokio` - Async runtime
 - `anyhow` - Error handling
-- `regex` - Pattern matching for ROKU tickets
 
 ## Development
 

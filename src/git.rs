@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use git2::{Repository, Status, StatusOptions};
-use regex::Regex;
 use std::process::Command;
 
 /// Verifies current directory is a git repository and returns Repository handle
@@ -104,37 +103,9 @@ pub fn stage_files(extensions: Option<String>, directory: Option<String>) -> Res
     Ok(())
 }
 
-/// Extracts ROKU ticket number from current git branch name
-pub fn extract_roku_ticket() -> Result<Option<String>> {
-    let output = Command::new("git")
-        .args(["branch", "--show-current"])
-        .output()?;
-
-    if !output.status.success() {
-        return Ok(None);
-    }
-
-    let branch = String::from_utf8_lossy(&output.stdout);
-    let re = Regex::new(r"(ROKU-\d+)")?;
-
-    Ok(re.find(&branch).map(|m| m.as_str().to_string()))
-}
-
-/// Builds final commit message, handling ROKU ticket extraction if needed
+/// Builds final commit message
 pub fn build_commit_message(prefix: &str, message: &str) -> Result<String> {
-    let final_prefix = if prefix.to_uppercase() == "ROKU-" {
-        if let Some(ticket) = extract_roku_ticket()? {
-            format!("{ticket}:")
-        } else {
-            return Err(anyhow::anyhow!(
-                "Could not extract ROKU ticket from branch name"
-            ));
-        }
-    } else {
-        prefix.to_string()
-    };
-
-    Ok(format!("{final_prefix} {message}"))
+    Ok(format!("{prefix} {message}"))
 }
 
 /// Creates commit with message and optionally pushes to remote

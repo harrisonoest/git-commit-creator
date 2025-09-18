@@ -46,7 +46,6 @@ pub const COMMIT_PREFIXES: &[&str] = &[
     "test:",
     "ci:",
     "chore:",
-    "ROKU-",
 ];
 
 /// Application state for TUI navigation
