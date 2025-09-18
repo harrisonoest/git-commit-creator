@@ -1,6 +1,6 @@
 [package]
 name = "gitcc"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Harrison Oest <harrison.oest@gmail.com>"]
 description = "A beautiful command-line tool for streamlined git operations with interactive TUI"
