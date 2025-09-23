@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::{App, AppState, COMMIT_PREFIXES};
+use crate::{App, AppState, BRANCH_PREFIXES, COMMIT_PREFIXES};
 
 /// Deletes word backward from cursor position
 fn delete_word_backward(text: &mut String, cursor_pos: &mut usize) {
@@ -201,6 +201,106 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
             }
             KeyCode::End => {
                 app.cursor_position = app.commit_message.len();
+            }
+            KeyCode::Esc => app.should_quit = true,
+            _ => {}
+        },
+        AppState::BranchPrefixSelection => match key {
+            KeyCode::Up => {
+                if app.selected_branch_prefix_index > 0 {
+                    app.selected_branch_prefix_index -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if app.selected_branch_prefix_index < BRANCH_PREFIXES.len() - 1 {
+                    app.selected_branch_prefix_index += 1;
+                }
+            }
+            KeyCode::Enter => {
+                let selected_prefix = BRANCH_PREFIXES[app.selected_branch_prefix_index];
+                app.branch_prefix = Some(selected_prefix.to_string());
+                app.state = AppState::BranchStoryInput;
+                app.cursor_position = app.branch_story.len();
+            }
+            KeyCode::Esc => app.should_quit = true,
+            _ => {}
+        },
+        AppState::BranchStoryInput => match key {
+            KeyCode::Enter => {
+                app.state = AppState::BranchNameInput;
+                app.cursor_position = app.branch_name.len();
+            }
+            KeyCode::Char(c) if c.is_ascii_digit() => {
+                app.branch_story.insert(app.cursor_position, c);
+                app.cursor_position += 1;
+            }
+            KeyCode::Backspace => {
+                if app.cursor_position > 0 {
+                    app.cursor_position -= 1;
+                    app.branch_story.remove(app.cursor_position);
+                }
+            }
+            KeyCode::Delete => {
+                if app.cursor_position < app.branch_story.len() {
+                    app.branch_story.remove(app.cursor_position);
+                }
+            }
+            KeyCode::Left => {
+                if app.cursor_position > 0 {
+                    app.cursor_position -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if app.cursor_position < app.branch_story.len() {
+                    app.cursor_position += 1;
+                }
+            }
+            KeyCode::Home => {
+                app.cursor_position = 0;
+            }
+            KeyCode::End => {
+                app.cursor_position = app.branch_story.len();
+            }
+            KeyCode::Esc => app.should_quit = true,
+            _ => {}
+        },
+        AppState::BranchNameInput => match key {
+            KeyCode::Enter => {
+                if !app.branch_name.trim().is_empty() {
+                    app.should_proceed = true;
+                    app.should_quit = true;
+                }
+            }
+            KeyCode::Char(c) => {
+                app.branch_name.insert(app.cursor_position, c);
+                app.cursor_position += 1;
+            }
+            KeyCode::Backspace => {
+                if app.cursor_position > 0 {
+                    app.cursor_position -= 1;
+                    app.branch_name.remove(app.cursor_position);
+                }
+            }
+            KeyCode::Delete => {
+                if app.cursor_position < app.branch_name.len() {
+                    app.branch_name.remove(app.cursor_position);
+                }
+            }
+            KeyCode::Left => {
+                if app.cursor_position > 0 {
+                    app.cursor_position -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if app.cursor_position < app.branch_name.len() {
+                    app.cursor_position += 1;
+                }
+            }
+            KeyCode::Home => {
+                app.cursor_position = 0;
+            }
+            KeyCode::End => {
+                app.cursor_position = app.branch_name.len();
             }
             KeyCode::Esc => app.should_quit = true,
             _ => {}

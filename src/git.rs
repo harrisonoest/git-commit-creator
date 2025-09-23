@@ -182,3 +182,39 @@ pub fn unstage_all() -> Result<()> {
 
     Ok(())
 }
+
+/// Builds branch name in format: prefix/wuko-{story}/{name} or prefix/{name}
+pub fn build_branch_name(prefix: &str, story: Option<&str>, name: &str) -> Result<String> {
+    let branch_name = if let Some(story_num) = story {
+        format!("{prefix}/wuko-{story_num}/{name}")
+    } else {
+        format!("{prefix}/{name}")
+    };
+    Ok(branch_name)
+}
+
+/// Creates a new branch and checks it out
+pub fn create_and_checkout_branch(branch_name: &str) -> Result<()> {
+    let output = Command::new("git").args(["branch", branch_name]).output()?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "Failed to create branch: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let output = Command::new("git")
+        .args(["checkout", branch_name])
+        .output()?;
+
+    if !output.status.success() {
+        anyhow::bail!(
+            "Failed to checkout branch: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    println!("✅ Created and checked out branch: {branch_name}");
+    Ok(())
+}

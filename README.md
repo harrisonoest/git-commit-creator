@@ -1,11 +1,12 @@
 # Git Commit Creator (gitcc) 🚀
 
-A beautiful command-line tool built with Rust and `ratatui` for streamlined git operations. Create conventional commits and push changes with an interactive TUI interface.
+A beautiful command-line tool built with Rust and `ratatui` for streamlined git operations. Create conventional commits, create branches, and push changes with an interactive TUI interface.
 
 ## Features
 
 - 🎨 **Beautiful TUI Interface** - Interactive terminal UI built with `ratatui`
 - 📝 **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
+- 🌿 **Branch Creation** - Create branches with conventional prefixes and Jira story numbers
 - 🎯 **Selective Staging** - Stage files by extension or directory
 - 🔍 **File Preview** - Review staged files before committing
 - ⚡ **Fast & Efficient** - Built in Rust for performance
@@ -37,6 +38,7 @@ The binary will be available at `target/release/gitcc`.
 
 ### Interactive Mode (Default)
 
+#### Commit Mode
 ```bash
 gitcc
 ```
@@ -47,8 +49,20 @@ This launches the TUI interface where you can:
 3. Enter commit message
 4. Confirm and push
 
+#### Branch Creation Mode
+```bash
+gitcc --branch
+```
+
+This launches the TUI interface for branch creation where you can:
+1. Select branch prefix interactively
+2. Enter optional Jira story number
+3. Enter branch name
+4. Create and checkout branch
+
 ### Command Line Arguments
 
+#### Commit Operations
 ```bash
 # Specify commit message and prefix
 gitcc -p "feat:" -m "add new feature"
@@ -63,13 +77,34 @@ gitcc -d "src/" -p "refactor:" -m "restructure source code"
 gitcc --no-push -m "local commit only"
 ```
 
+#### Branch Operations
+```bash
+# Interactive branch creation
+gitcc --branch
+
+# Create branch with all parameters
+gitcc --branch --branch-prefix "feat" --story "123" --branch-name "new-feature"
+
+# Create branch without story number
+gitcc --branch --branch-prefix "fix" --branch-name "bug-fix"
+```
+
 ### Available Options
 
+#### Commit Options
 - `-m, --message <MESSAGE>` - Commit message (omit for interactive prompt)
 - `-p, --prefix <PREFIX>` - Commit prefix (omit for interactive prompt)
 - `--no-push` - Do not push after committing
 - `-e, --extensions <EXTENSIONS>` - Comma-separated file extensions to stage
 - `-d, --directory <DIRECTORY>` - Directory to restrict staging to
+
+#### Branch Options
+- `-b, --branch` - Enable branch creation mode
+- `--branch-prefix <PREFIX>` - Branch prefix (omit for interactive prompt)
+- `--story <NUMBER>` - Jira story number (optional)
+- `--branch-name <NAME>` - Branch name (omit for interactive prompt)
+
+#### General Options
 - `-h, --help` - Show help information
 
 ## Commit Prefixes
@@ -83,6 +118,24 @@ The tool supports conventional commit prefixes:
 - `refactor:` - Code refactoring
 - `test:` - Test additions/changes
 - `chore:` - Maintenance tasks
+
+## Branch Prefixes
+
+The tool supports conventional branch prefixes:
+
+- `build` - Build system changes
+- `chore` - Maintenance tasks
+- `ci` - CI/CD changes
+- `docs` - Documentation changes
+- `feat` - New features
+- `fix` - Bug fixes
+- `perf` - Performance improvements
+- `refactor` - Code refactoring
+- `revert` - Revert changes
+- `style` - Code style changes
+- `test` - Test additions/changes
+
+Branch names are created in the format: `prefix/wuko-{story}/{name}` or `prefix/{name}` if no story number is provided.
 
 ## TUI Controls
 
@@ -102,15 +155,27 @@ The tool supports conventional commit prefixes:
 - `Backspace` - Delete characters
 - `Esc` - Quit
 
+### Branch Creation Screens
+- `↑/↓` - Navigate branch prefixes
+- `Enter` - Select/confirm input
+- Type story number (digits only) or branch name
+- `Esc` - Quit at any time
+
 ## Examples
 
 ### Basic Usage
 ```bash
-# Interactive mode - launches TUI
+# Interactive commit mode - launches TUI
 gitcc
+
+# Interactive branch creation mode - launches TUI
+gitcc --branch
 
 # Quick commit with CLI args
 gitcc -p "fix:" -m "resolve login issue"
+
+# Quick branch creation with CLI args
+gitcc --branch --branch-prefix "feat" --story "456" --branch-name "user-authentication"
 ```
 
 ### Selective Staging
