@@ -184,9 +184,15 @@ pub fn unstage_all() -> Result<()> {
 }
 
 /// Builds branch name in format: prefix/wuko-{story}/{name} or prefix/{name}
-pub fn build_branch_name(prefix: &str, story: Option<&str>, name: &str) -> Result<String> {
+pub fn build_branch_name(
+    prefix: &str,
+    story: Option<&str>,
+    name: &str,
+    story_prefix: Option<&str>,
+) -> Result<String> {
     let branch_name = if let Some(story_num) = story {
-        format!("{prefix}/wuko-{story_num}/{name}")
+        let prefix_str = story_prefix.unwrap_or("");
+        format!("{prefix}/{prefix_str}{story_num}/{name}")
     } else {
         format!("{prefix}/{name}")
     };

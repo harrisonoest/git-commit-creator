@@ -234,7 +234,12 @@ async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result
 
     // If all branch parameters provided via CLI, create directly
     if let (Some(prefix), Some(name)) = (&cli.branch_prefix, &cli.branch_name) {
-        let branch_name = git::build_branch_name(prefix, cli.story.as_deref(), name)?;
+        let branch_name = git::build_branch_name(
+            prefix,
+            cli.story.as_deref(),
+            name,
+            app_config.story_prefix.as_deref(),
+        )?;
         git::create_and_checkout_branch(&branch_name)?;
         return Ok(());
     }
@@ -272,8 +277,12 @@ async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result
                 } else {
                     Some(app.branch_story.as_str())
                 };
-                let branch_name =
-                    git::build_branch_name(&app.branch_prefix.unwrap(), story, &app.branch_name)?;
+                let branch_name = git::build_branch_name(
+                    &app.branch_prefix.unwrap(),
+                    story,
+                    &app.branch_name,
+                    app_config.story_prefix.as_deref(),
+                )?;
                 git::create_and_checkout_branch(&branch_name)?;
             } else {
                 println!("⏹️ Branch creation aborted by user.");
