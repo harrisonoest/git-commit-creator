@@ -6,9 +6,10 @@ A beautiful command-line tool built with Rust and `ratatui` for streamlined git 
 
 - 🎨 **Beautiful TUI Interface** - Interactive terminal UI built with `ratatui`
 - 📝 **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
-- 🌿 **Branch Creation** - Create branches with conventional prefixes and Jira story numbers
-- 🎯 **Selective Staging** - Stage files by extension or directory
+- 🌿 **Branch Creation** - Create branches with conventional prefixes and story numbers
+- 🎯 **Interactive File Staging** - Navigate and selectively stage/unstage files
 - 🔍 **File Preview** - Review staged files before committing
+- ⚙️ **Configurable** - Customize commit prefixes, branch prefixes, and more via config file
 - ⚡ **Fast & Efficient** - Built in Rust for performance
 
 ## Installation
@@ -89,7 +90,69 @@ gitcc --branch --branch-prefix "feat" --story "123" --branch-name "new-feature"
 gitcc --branch --branch-prefix "fix" --branch-name "bug-fix"
 ```
 
-### Available Options
+### Configuration
+
+Gitcc uses a configuration file located at `~/.gitcc/config.toml`. The file is automatically created with default values on first run.
+
+### Configuration File Structure
+
+The configuration file uses TOML format and supports the following options:
+
+```toml
+# Custom commit prefixes - array of strings
+commit_prefixes = ["feat:", "fix:", "docs:", "style:", "refactor:", "test:", "ci:", "chore:"]
+
+# Custom branch prefixes - array of strings
+branch_prefixes = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test"]
+
+# Optional story number prefix (e.g., "JIRA-", "TICKET-") - optional string
+story_prefix = "JIRA-"
+
+# Auto-push commits after creation - optional boolean (default: true)
+auto_push = true
+
+# Default commit prefix to pre-select - optional string
+default_commit_prefix = "feat:"
+```
+
+### Configuration Options Explained
+
+- **`commit_prefixes`**: Array of commit prefixes shown in the TUI selection. Add or remove prefixes to match your team's conventions.
+- **`branch_prefixes`**: Array of branch prefixes for branch creation mode. Customize based on your branching strategy.
+- **`story_prefix`**: Optional prefix for story numbers (e.g., "JIRA-123" becomes "JIRA-123: commit message"). Set to `null` or omit to disable.
+- **`auto_push`**: Whether to automatically push commits after creation. Set to `false` to commit locally only by default.
+- **`default_commit_prefix`**: Pre-select a specific commit prefix in the TUI. Must match one of the prefixes in `commit_prefixes`.
+
+### Modifying Configuration
+
+1. **Location**: The config file is located at `~/.gitcc/config.toml`
+2. **Auto-creation**: If the file doesn't exist, gitcc creates it with default values on first run
+3. **Manual editing**: Edit the file with any text editor
+4. **Validation**: Invalid TOML syntax will cause gitcc to fail with an error message
+5. **Reloading**: Changes take effect the next time you run gitcc
+
+### Example Customizations
+
+**For a team using Jira tickets:**
+```toml
+commit_prefixes = ["feat:", "fix:", "docs:", "refactor:", "test:"]
+story_prefix = "JIRA-"
+default_commit_prefix = "feat:"
+```
+
+**For a team that doesn't push automatically:**
+```toml
+auto_push = false
+commit_prefixes = ["add:", "fix:", "update:", "remove:"]
+```
+
+**For custom branch workflow:**
+```toml
+branch_prefixes = ["feature", "bugfix", "hotfix", "release"]
+story_prefix = "TICKET-"
+```
+
+## Available Options
 
 #### Commit Options
 - `-m, --message <MESSAGE>` - Commit message (omit for interactive prompt)
@@ -101,7 +164,7 @@ gitcc --branch --branch-prefix "fix" --branch-name "bug-fix"
 #### Branch Options
 - `-b, --branch` - Enable branch creation mode
 - `--branch-prefix <PREFIX>` - Branch prefix (omit for interactive prompt)
-- `--story <NUMBER>` - Jira story number (optional)
+- `--story <NUMBER>` - Story number (optional)
 - `--branch-name <NAME>` - Branch name (omit for interactive prompt)
 
 #### General Options
@@ -135,13 +198,14 @@ The tool supports conventional branch prefixes:
 - `style` - Code style changes
 - `test` - Test additions/changes
 
-Branch names are created in the format: `prefix/wuko-{story}/{name}` or `prefix/{name}` if no story number is provided.
+Branch names are created in the format: `prefix/{story_prefix}{story}/{name}` or `prefix/{name}` if no story number is provided. The `story_prefix` comes from your configuration file.
 
 ## TUI Controls
 
-### Staged Files Screen
-- `y` - Proceed with commit
-- `n` - Abort and unstage changes
+### File Review Screen
+- `↑/↓` - Navigate files
+- `Enter` - Stage/unstage selected file
+- `y` - Proceed with staged files
 - `Esc` - Quit
 
 ### Prefix Selection Screen  
@@ -152,7 +216,10 @@ Branch names are created in the format: `prefix/wuko-{story}/{name}` or `prefix/
 ### Message Input Screen
 - Type your commit message
 - `Enter` - Confirm message
-- `Backspace` - Delete characters
+- `Ctrl/Alt + Backspace` - Delete word backward
+- `Alt + D` - Delete word forward
+- `Ctrl/Alt + ←/→` - Move by word
+- `Home/End` - Move to start/end
 - `Esc` - Quit
 
 ### Branch Creation Screens
@@ -217,6 +284,9 @@ src/
 - `git2` - Git operations
 - `tokio` - Async runtime
 - `anyhow` - Error handling
+- `serde` - Configuration serialization
+- `toml` - Configuration file format
+- `dirs` - Home directory detection
 
 ## Development
 

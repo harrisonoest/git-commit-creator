@@ -5,7 +5,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{App, AppState, BRANCH_PREFIXES, COMMIT_PREFIXES};
+use crate::{App, AppState};
 
 /// Renders the TUI interface based on current application state
 pub fn render(f: &mut Frame, app: &App) {
@@ -83,7 +83,8 @@ pub fn render(f: &mut Frame, app: &App) {
             f.render_widget(help, layout[1]);
         }
         AppState::PrefixSelection => {
-            let items: Vec<ListItem> = COMMIT_PREFIXES
+            let items: Vec<ListItem> = app
+                .commit_prefixes
                 .iter()
                 .enumerate()
                 .map(|(i, prefix)| {
@@ -92,7 +93,7 @@ pub fn render(f: &mut Frame, app: &App) {
                     } else {
                         Style::default()
                     };
-                    ListItem::new(*prefix).style(style)
+                    ListItem::new(prefix.as_str()).style(style)
                 })
                 .collect();
 
@@ -143,7 +144,8 @@ pub fn render(f: &mut Frame, app: &App) {
             f.render_widget(help, layout[1]);
         }
         AppState::BranchPrefixSelection => {
-            let items: Vec<ListItem> = BRANCH_PREFIXES
+            let items: Vec<ListItem> = app
+                .branch_prefixes
                 .iter()
                 .enumerate()
                 .map(|(i, prefix)| {
@@ -152,7 +154,7 @@ pub fn render(f: &mut Frame, app: &App) {
                     } else {
                         Style::default()
                     };
-                    ListItem::new(*prefix).style(style)
+                    ListItem::new(prefix.as_str()).style(style)
                 })
                 .collect();
 

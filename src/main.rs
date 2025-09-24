@@ -1,5 +1,6 @@
 //! Git Commit Creator (gitcc) - A TUI tool for creating conventional commits
 
+mod config;
 mod git;
 mod key_handler;
 mod ui;
@@ -52,23 +53,6 @@ struct Cli {
     branch_name: Option<String>,
 }
 
-/// Available conventional commit prefixes
-pub const COMMIT_PREFIXES: &[&str] = &[
-    "feat:",
-    "fix:",
-    "docs:",
-    "style:",
-    "refactor:",
-    "test:",
-    "ci:",
-    "chore:",
-];
-
-/// Available branch prefixes
-pub const BRANCH_PREFIXES: &[&str] = &[
-    "build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test",
-];
-
 /// Application state for TUI navigation
 #[derive(Debug, Clone)]
 pub enum AppState {
@@ -96,6 +80,8 @@ pub struct App {
     pub selected_file_index: usize,
     pub all_files: Vec<String>,
     pub staged_files_set: std::collections::HashSet<String>,
+    pub commit_prefixes: Vec<String>,
+    pub branch_prefixes: Vec<String>,
     pub is_branch_mode: bool,
     pub selected_branch_prefix_index: usize,
     pub branch_story: String,
@@ -111,6 +97,7 @@ impl App {
         no_push: bool,
         is_branch_mode: bool,
         branch_prefix: Option<String>,
+        app_config: &config::Config,
     ) -> Self {
         let state = if is_branch_mode {
             AppState::BranchPrefixSelection
@@ -135,6 +122,8 @@ impl App {
             selected_file_index: 0,
             all_files: Vec::new(),
             staged_files_set: std::collections::HashSet::new(),
+            commit_prefixes: app_config.commit_prefixes.clone(),
+            branch_prefixes: app_config.branch_prefixes.clone(),
             is_branch_mode,
             selected_branch_prefix_index: 0,
             branch_story: String::new(),
@@ -168,11 +157,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) 
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let app_config = config::Config::load()?;
     let cli = Cli::parse();
 
     // Handle branch creation mode
     if cli.branch {
-        return handle_branch_creation(cli).await;
+        return handle_branch_creation(cli, &app_config).await;
     }
 
     let repo = git::ensure_git_repository()?;
@@ -197,7 +187,14 @@ async fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new(cli.prefix, cli.message, cli.no_push, false, None);
+    let mut app = App::new(
+        cli.prefix,
+        cli.message,
+        cli.no_push,
+        false,
+        None,
+        &app_config,
+    );
     app.all_files = all_files;
     app.staged_files = staged_files.clone();
     app.staged_files_set = staged_files.into_iter().collect();
@@ -232,7 +229,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn handle_branch_creation(cli: Cli) -> Result<()> {
+async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
     git::ensure_git_repository()?;
 
     // If all branch parameters provided via CLI, create directly
@@ -249,7 +246,7 @@ async fn handle_branch_creation(cli: Cli) -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new(None, None, false, true, cli.branch_prefix);
+    let mut app = App::new(None, None, false, true, cli.branch_prefix, app_config);
     if let Some(story) = cli.story {
         app.branch_story = story;
     }

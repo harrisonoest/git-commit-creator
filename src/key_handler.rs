@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::{App, AppState, BRANCH_PREFIXES, COMMIT_PREFIXES};
+use crate::{App, AppState};
 
 /// Deletes word backward from cursor position
 fn delete_word_backward(text: &mut String, cursor_pos: &mut usize) {
@@ -129,13 +129,13 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 }
             }
             KeyCode::Down => {
-                if app.selected_prefix_index < COMMIT_PREFIXES.len() - 1 {
+                if app.selected_prefix_index < app.commit_prefixes.len() - 1 {
                     app.selected_prefix_index += 1;
                 }
             }
             KeyCode::Enter => {
-                let selected_prefix = COMMIT_PREFIXES[app.selected_prefix_index];
-                app.prefix = Some(selected_prefix.to_string());
+                let selected_prefix = &app.commit_prefixes[app.selected_prefix_index];
+                app.prefix = Some(selected_prefix.clone());
 
                 if app.message.is_some() {
                     app.should_quit = true;
@@ -212,13 +212,13 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 }
             }
             KeyCode::Down => {
-                if app.selected_branch_prefix_index < BRANCH_PREFIXES.len() - 1 {
+                if app.selected_branch_prefix_index < app.branch_prefixes.len() - 1 {
                     app.selected_branch_prefix_index += 1;
                 }
             }
             KeyCode::Enter => {
-                let selected_prefix = BRANCH_PREFIXES[app.selected_branch_prefix_index];
-                app.branch_prefix = Some(selected_prefix.to_string());
+                let selected_prefix = &app.branch_prefixes[app.selected_branch_prefix_index];
+                app.branch_prefix = Some(selected_prefix.clone());
                 app.state = AppState::BranchStoryInput;
                 app.cursor_position = app.branch_story.len();
             }
