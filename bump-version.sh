@@ -13,7 +13,7 @@ VERSION=$1
 sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
 
 # Commit and tag
-git add Cargo.toml
+git add Cargo.toml Cargo.lock
 git commit -m "chore: bump version to $VERSION"
 git tag "v$VERSION"
 
