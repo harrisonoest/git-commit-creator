@@ -183,7 +183,7 @@ pub fn unstage_all() -> Result<()> {
     Ok(())
 }
 
-/// Builds branch name in format: prefix/wuko-{story}/{name} or prefix/{name}
+/// Builds branch name in format: prefix/{story_prefix}{story}/{name} or prefix/{name}
 pub fn build_branch_name(
     prefix: &str,
     story: Option<&str>,
