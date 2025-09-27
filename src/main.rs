@@ -87,6 +87,7 @@ pub struct App {
     pub branch_story: String,
     pub branch_name: String,
     pub branch_prefix: Option<String>,
+    pub filter: String,
 }
 
 impl App {
@@ -107,7 +108,7 @@ impl App {
 
         let cursor_pos = message.as_ref().map_or(0, |m| m.len());
 
-        Self {
+        let mut app = Self {
             state,
             staged_files: Vec::new(),
             selected_prefix_index: 0,
@@ -129,6 +130,41 @@ impl App {
             branch_story: String::new(),
             branch_name: String::new(),
             branch_prefix,
+            filter: String::new(),
+        };
+
+        // Reset filter and selection for branch mode
+        if is_branch_mode {
+            app.filter.clear();
+            app.selected_branch_prefix_index = 0;
+        }
+
+        app
+    }
+
+    /// Get filtered commit prefixes
+    pub fn filtered_commit_prefixes(&self) -> Vec<String> {
+        if self.filter.is_empty() {
+            self.commit_prefixes.clone()
+        } else {
+            self.commit_prefixes
+                .iter()
+                .filter(|prefix| prefix.to_lowercase().contains(&self.filter.to_lowercase()))
+                .cloned()
+                .collect()
+        }
+    }
+
+    /// Get filtered branch prefixes
+    pub fn filtered_branch_prefixes(&self) -> Vec<String> {
+        if self.filter.is_empty() {
+            self.branch_prefixes.clone()
+        } else {
+            self.branch_prefixes
+                .iter()
+                .filter(|prefix| prefix.to_lowercase().contains(&self.filter.to_lowercase()))
+                .cloned()
+                .collect()
         }
     }
 }

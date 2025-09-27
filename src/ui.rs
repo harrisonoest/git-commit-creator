@@ -83,8 +83,8 @@ pub fn render(f: &mut Frame, app: &App) {
             f.render_widget(help, layout[1]);
         }
         AppState::PrefixSelection => {
-            let items: Vec<ListItem> = app
-                .commit_prefixes
+            let filtered_prefixes = app.filtered_commit_prefixes();
+            let items: Vec<ListItem> = filtered_prefixes
                 .iter()
                 .enumerate()
                 .map(|(i, prefix)| {
@@ -103,17 +103,28 @@ pub fn render(f: &mut Frame, app: &App) {
                     .borders(Borders::ALL),
             );
 
-            let help = Paragraph::new("Use ↑↓ to navigate, Enter to select, Esc to quit")
+            let filter_display = if app.filter.is_empty() {
+                "Type to filter...".to_string()
+            } else {
+                format!("Filter: {}", app.filter)
+            };
+
+            let filter_widget = Paragraph::new(filter_display)
+                .style(Style::default().fg(Color::Cyan))
+                .block(Block::default().borders(Borders::ALL).title("Filter"));
+
+            let help = Paragraph::new("Type to filter, ↑↓ to navigate, Enter to select, Backspace to clear filter, Esc to quit")
                 .style(Style::default().fg(Color::Yellow))
                 .wrap(Wrap { trim: true });
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(3)].as_ref())
+                .constraints([Constraint::Min(0), Constraint::Length(3), Constraint::Length(3)].as_ref())
                 .split(chunks[1]);
 
             f.render_widget(list, layout[0]);
-            f.render_widget(help, layout[1]);
+            f.render_widget(filter_widget, layout[1]);
+            f.render_widget(help, layout[2]);
         }
         AppState::MessageInput => {
             let message_with_cursor = if app.cursor_visible {
@@ -144,8 +155,8 @@ pub fn render(f: &mut Frame, app: &App) {
             f.render_widget(help, layout[1]);
         }
         AppState::BranchPrefixSelection => {
-            let items: Vec<ListItem> = app
-                .branch_prefixes
+            let filtered_prefixes = app.filtered_branch_prefixes();
+            let items: Vec<ListItem> = filtered_prefixes
                 .iter()
                 .enumerate()
                 .map(|(i, prefix)| {
@@ -164,17 +175,28 @@ pub fn render(f: &mut Frame, app: &App) {
                     .borders(Borders::ALL),
             );
 
-            let help = Paragraph::new("Use ↑↓ to navigate, Enter to select, Esc to quit")
+            let filter_display = if app.filter.is_empty() {
+                "Type to filter...".to_string()
+            } else {
+                format!("Filter: {}", app.filter)
+            };
+
+            let filter_widget = Paragraph::new(filter_display)
+                .style(Style::default().fg(Color::Cyan))
+                .block(Block::default().borders(Borders::ALL).title("Filter"));
+
+            let help = Paragraph::new("Type to filter, ↑↓ to navigate, Enter to select, Backspace to clear filter, Esc to quit")
                 .style(Style::default().fg(Color::Yellow))
                 .wrap(Wrap { trim: true });
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(3)].as_ref())
+                .constraints([Constraint::Min(0), Constraint::Length(3), Constraint::Length(3)].as_ref())
                 .split(chunks[1]);
 
             f.render_widget(list, layout[0]);
-            f.render_widget(help, layout[1]);
+            f.render_widget(filter_widget, layout[1]);
+            f.render_widget(help, layout[2]);
         }
         AppState::BranchStoryInput => {
             let story_with_cursor = if app.cursor_visible {

@@ -114,6 +114,8 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 } else if app.prefix.is_some() {
                     app.state = AppState::MessageInput;
                 } else {
+                    app.filter.clear();
+                    app.selected_prefix_index = 0;
                     app.state = AppState::PrefixSelection;
                 }
             }
@@ -124,23 +126,42 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
         },
         AppState::PrefixSelection => match key {
             KeyCode::Up => {
+                let filtered = app.filtered_commit_prefixes();
                 if app.selected_prefix_index > 0 {
                     app.selected_prefix_index -= 1;
+                } else {
+                    app.selected_prefix_index = filtered.len().saturating_sub(1);
                 }
             }
             KeyCode::Down => {
-                if app.selected_prefix_index < app.commit_prefixes.len() - 1 {
+                let filtered = app.filtered_commit_prefixes();
+                if app.selected_prefix_index < filtered.len().saturating_sub(1) {
                     app.selected_prefix_index += 1;
+                } else {
+                    app.selected_prefix_index = 0;
                 }
             }
             KeyCode::Enter => {
-                let selected_prefix = &app.commit_prefixes[app.selected_prefix_index];
-                app.prefix = Some(selected_prefix.clone());
+                let filtered = app.filtered_commit_prefixes();
+                if !filtered.is_empty() && app.selected_prefix_index < filtered.len() {
+                    let selected_prefix = &filtered[app.selected_prefix_index];
+                    app.prefix = Some(selected_prefix.clone());
 
-                if app.message.is_some() {
-                    app.should_quit = true;
-                } else {
-                    app.state = AppState::MessageInput;
+                    if app.message.is_some() {
+                        app.should_quit = true;
+                    } else {
+                        app.state = AppState::MessageInput;
+                    }
+                }
+            }
+            KeyCode::Char(c) => {
+                app.filter.push(c);
+                app.selected_prefix_index = 0;
+            }
+            KeyCode::Backspace => {
+                if !app.filter.is_empty() {
+                    app.filter.pop();
+                    app.selected_prefix_index = 0;
                 }
             }
             KeyCode::Esc => app.should_quit = true,
@@ -207,20 +228,39 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
         },
         AppState::BranchPrefixSelection => match key {
             KeyCode::Up => {
+                let filtered = app.filtered_branch_prefixes();
                 if app.selected_branch_prefix_index > 0 {
                     app.selected_branch_prefix_index -= 1;
+                } else {
+                    app.selected_branch_prefix_index = filtered.len().saturating_sub(1);
                 }
             }
             KeyCode::Down => {
-                if app.selected_branch_prefix_index < app.branch_prefixes.len() - 1 {
+                let filtered = app.filtered_branch_prefixes();
+                if app.selected_branch_prefix_index < filtered.len().saturating_sub(1) {
                     app.selected_branch_prefix_index += 1;
+                } else {
+                    app.selected_branch_prefix_index = 0;
                 }
             }
             KeyCode::Enter => {
-                let selected_prefix = &app.branch_prefixes[app.selected_branch_prefix_index];
-                app.branch_prefix = Some(selected_prefix.clone());
-                app.state = AppState::BranchStoryInput;
-                app.cursor_position = app.branch_story.len();
+                let filtered = app.filtered_branch_prefixes();
+                if !filtered.is_empty() && app.selected_branch_prefix_index < filtered.len() {
+                    let selected_prefix = &filtered[app.selected_branch_prefix_index];
+                    app.branch_prefix = Some(selected_prefix.clone());
+                    app.state = AppState::BranchStoryInput;
+                    app.cursor_position = app.branch_story.len();
+                }
+            }
+            KeyCode::Char(c) => {
+                app.filter.push(c);
+                app.selected_branch_prefix_index = 0;
+            }
+            KeyCode::Backspace => {
+                if !app.filter.is_empty() {
+                    app.filter.pop();
+                    app.selected_branch_prefix_index = 0;
+                }
             }
             KeyCode::Esc => app.should_quit = true,
             _ => {}
