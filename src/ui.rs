@@ -1,14 +1,17 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{
+        Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
+        Wrap,
+    },
     Frame,
 };
 
 use crate::{App, AppState};
 
 /// Renders the TUI interface based on current application state
-pub fn render(f: &mut Frame, app: &App) {
+pub fn render(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -57,12 +60,53 @@ pub fn render(f: &mut Frame, app: &App) {
                 .collect();
 
             let files_list = List::new(items)
+                .block(Block::default().title("📁 Files").borders(Borders::ALL))
+                .style(Style::default());
+
+            // Format diff with color coding
+            let all_diff_lines: Vec<ratatui::text::Line> = app
+                .current_diff
+                .lines()
+                .map(|line| {
+                    let style = if line.starts_with('+') && !line.starts_with("+++") {
+                        Style::default().fg(Color::Green)
+                    } else if line.starts_with('-') && !line.starts_with("---") {
+                        Style::default().fg(Color::Red)
+                    } else if line.starts_with("@@") {
+                        Style::default().fg(Color::Cyan)
+                    } else {
+                        Style::default()
+                    };
+                    ratatui::text::Line::from(ratatui::text::Span::styled(line, style))
+                })
+                .collect();
+
+            // Apply scroll offset
+            let diff_lines: Vec<ratatui::text::Line> = all_diff_lines
+                .into_iter()
+                .skip(app.diff_scroll_offset)
+                .collect();
+
+            let selected_file = app
+                .all_files
+                .get(app.selected_file_index)
+                .map(|s| s.as_str())
+                .unwrap_or("");
+
+            let total_lines = app.current_diff.lines().count();
+            let scroll_indicator = if total_lines > 0 && app.diff_scroll_offset > 0 {
+                format!(" (line {}/{})", app.diff_scroll_offset + 1, total_lines)
+            } else {
+                String::new()
+            };
+
+            let diff_widget = Paragraph::new(diff_lines)
                 .block(
                     Block::default()
-                        .title("📁 Files")
+                        .title(format!("📝 Diff: {}{}", selected_file, scroll_indicator))
                         .borders(Borders::ALL),
                 )
-                .style(Style::default());
+                .wrap(Wrap { trim: false });
 
             let help = if app.staged_files_set.is_empty() {
                 Paragraph::new("⚠️ No files staged - stage at least one file to proceed")
@@ -70,19 +114,63 @@ pub fn render(f: &mut Frame, app: &App) {
                     .wrap(Wrap { trim: true })
             } else {
                 Paragraph::new(
-                    "↑↓ to navigate, Space to stage/unstage, Enter to proceed, Esc to abort",
+                    "↑↓ - scroll files, j/k - scroll diff, Space - stage, Enter - proceed, Esc - abort",
                 )
                 .style(Style::default().fg(Color::Yellow))
                 .wrap(Wrap { trim: true })
             };
 
-            let layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(3)].as_ref())
-                .split(chunks[1]);
+            // Calculate file list size: number of files + 2 for borders, minimum 3 lines
+            let file_list_size = (app.all_files.len() + 2).max(3) as u16;
+
+            // Check if we have enough space for diff (need at least 10 lines total)
+            let available_height = chunks[1].height;
+            let show_diff = available_height >= 10;
+
+            let layout = if show_diff {
+                Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Length(file_list_size),
+                        Constraint::Min(5),
+                        Constraint::Length(3),
+                    ])
+                    .split(chunks[1])
+            } else {
+                Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Min(3), Constraint::Length(3)])
+                    .split(chunks[1])
+            };
 
             f.render_widget(files_list, layout[0]);
-            f.render_widget(help, layout[1]);
+
+            if show_diff {
+                // Update visible lines for scroll calculation (subtract 2 for borders)
+                app.diff_visible_lines = layout[1].height.saturating_sub(2) as usize;
+
+                f.render_widget(diff_widget, layout[1]);
+
+                // Render scrollbar for diff area
+                let total_lines = app.current_diff.lines().count();
+                if total_lines > app.diff_visible_lines {
+                    let max_scroll = total_lines.saturating_sub(app.diff_visible_lines);
+                    let mut scrollbar_state = ScrollbarState::default()
+                        .content_length(max_scroll.saturating_add(1))
+                        .position(app.diff_scroll_offset);
+
+                    let scrollbar = Scrollbar::default()
+                        .orientation(ScrollbarOrientation::VerticalRight)
+                        .begin_symbol(Some("↑"))
+                        .end_symbol(Some("↓"));
+
+                    f.render_stateful_widget(scrollbar, layout[1], &mut scrollbar_state);
+                }
+
+                f.render_widget(help, layout[2]);
+            } else {
+                f.render_widget(help, layout[1]);
+            }
         }
         AppState::PrefixSelection => {
             let filtered_prefixes = app.filtered_commit_prefixes();

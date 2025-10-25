@@ -89,6 +89,9 @@ pub struct App {
     pub branch_prefix: Option<String>,
     pub filter: String,
     pub file_statuses: std::collections::HashMap<String, git::FileStatus>,
+    pub current_diff: String,
+    pub diff_scroll_offset: usize,
+    pub diff_visible_lines: usize,
 }
 
 impl App {
@@ -133,6 +136,9 @@ impl App {
             branch_prefix,
             filter: String::new(),
             file_statuses: std::collections::HashMap::new(),
+            current_diff: String::new(),
+            diff_scroll_offset: 0,
+            diff_visible_lines: 0,
         };
 
         // Reset filter and selection for branch mode
@@ -169,12 +175,25 @@ impl App {
                 .collect()
         }
     }
+
+    /// Update the current diff for the selected file
+    pub fn update_current_diff(&mut self) {
+        if let Some(file) = self.all_files.get(self.selected_file_index) {
+            let is_staged = self.staged_files_set.contains(file);
+            self.current_diff = git::get_file_diff(file, is_staged)
+                .unwrap_or_else(|_| "Error fetching diff".to_string());
+            self.diff_scroll_offset = 0;
+        } else {
+            self.current_diff = String::new();
+            self.diff_scroll_offset = 0;
+        }
+    }
 }
 
 /// Main TUI event loop
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) -> Result<App> {
     loop {
-        terminal.draw(|f| ui::render(f, &app))?;
+        terminal.draw(|f| ui::render(f, &mut app))?;
 
         if app.should_quit {
             break;
@@ -237,6 +256,7 @@ async fn main() -> Result<()> {
     app.staged_files = staged_files.clone();
     app.staged_files_set = staged_files.into_iter().collect();
     app.file_statuses = file_statuses;
+    app.update_current_diff();
 
     let result = run_app(&mut terminal, app);
 

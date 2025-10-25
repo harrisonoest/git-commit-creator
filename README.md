@@ -206,6 +206,7 @@ Branch names are created in the format: `prefix/{story_prefix}{story}/{name}` or
 ### File Review Screen
 - `↑/↓` - Navigate files
 - `Space` - Stage/unstage selected file
+- `j/k` - Scroll diff preview
 - `Enter` - Proceed with staged files
 - `Esc` - Quit
 

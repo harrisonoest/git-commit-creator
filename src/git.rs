@@ -256,3 +256,71 @@ pub fn create_and_checkout_branch(branch_name: &str) -> Result<()> {
     println!("✅ Created and checked out branch: {branch_name}");
     Ok(())
 }
+
+/// Gets the diff for a specific file
+pub fn get_file_diff(file_path: &str, is_staged: bool) -> Result<String> {
+    // Check if file is binary
+    let file_output = Command::new("git")
+        .args(["diff", "--numstat", "--", file_path])
+        .output()?;
+
+    if file_output.status.success() {
+        let output_str = String::from_utf8_lossy(&file_output.stdout);
+        if output_str.starts_with('-') && output_str.contains('-') {
+            return Ok("Binary file - no preview available".to_string());
+        }
+    }
+
+    let mut cmd = Command::new("git");
+    cmd.arg("diff");
+
+    if is_staged {
+        cmd.arg("--cached");
+    }
+
+    cmd.args(["--", file_path]);
+
+    let output = cmd.output()?;
+
+    if !output.status.success() {
+        return Ok("Error fetching diff".to_string());
+    }
+
+    let diff = String::from_utf8_lossy(&output.stdout).to_string();
+
+    if diff.trim().is_empty() {
+        // For new files, show the file content
+        if let Ok(content) = std::fs::read_to_string(file_path) {
+            let lines: Vec<&str> = content.lines().take(100).collect();
+            let preview = lines
+                .iter()
+                .map(|line| format!("+ {}", line))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let total_lines = content.lines().count();
+            if total_lines > 100 {
+                return Ok(format!(
+                    "{}\n... ({} more lines)",
+                    preview,
+                    total_lines - 100
+                ));
+            }
+            return Ok(preview);
+        }
+        return Ok("No changes to display".to_string());
+    }
+
+    // Truncate large diffs
+    let lines: Vec<&str> = diff.lines().collect();
+    if lines.len() > 100 {
+        let truncated = lines[..100].join("\n");
+        Ok(format!(
+            "{}\n... (diff truncated, {} more lines)",
+            truncated,
+            lines.len() - 100
+        ))
+    } else {
+        Ok(diff)
+    }
+}

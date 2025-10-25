@@ -85,12 +85,26 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
             KeyCode::Up => {
                 if app.selected_file_index > 0 {
                     app.selected_file_index -= 1;
+                } else {
+                    app.selected_file_index = app.all_files.len().saturating_sub(1);
                 }
+                app.update_current_diff();
             }
             KeyCode::Down => {
                 if app.selected_file_index < app.all_files.len().saturating_sub(1) {
                     app.selected_file_index += 1;
+                } else {
+                    app.selected_file_index = 0;
                 }
+                app.update_current_diff();
+            }
+            KeyCode::Char('j') => {
+                let total_lines = app.current_diff.lines().count();
+                let max_scroll = total_lines.saturating_sub(app.diff_visible_lines);
+                app.diff_scroll_offset = (app.diff_scroll_offset + 1).min(max_scroll);
+            }
+            KeyCode::Char('k') => {
+                app.diff_scroll_offset = app.diff_scroll_offset.saturating_sub(1);
             }
             KeyCode::Char(' ') => {
                 if let Some(file) = app.all_files.get(app.selected_file_index) {
@@ -101,6 +115,7 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                         let _ = crate::git::stage_file(file);
                         app.staged_files_set.insert(file.clone());
                     }
+                    app.update_current_diff();
                 }
             }
             KeyCode::Enter => {
