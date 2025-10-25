@@ -8,7 +8,8 @@ A beautiful command-line tool built with Rust and `ratatui` for streamlined git 
 - 📝 **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
 - 🌿 **Branch Creation** - Create branches with conventional prefixes and story numbers
 - 🎯 **Interactive File Staging** - Navigate and selectively stage/unstage files
-- 🔍 **File Preview** - Review staged files before committing
+- 🔍 **File Status Indicators** - See at a glance if files are Added (A), Modified (M), or Deleted (D)
+- 📋 **File Preview** - Review staged files before committing
 - ⚙️ **Configurable** - Customize commit prefixes, branch prefixes, and more via config file
 - ⚡ **Fast & Efficient** - Built in Rust for performance
 
@@ -204,9 +205,16 @@ Branch names are created in the format: `prefix/{story_prefix}{story}/{name}` or
 
 ### File Review Screen
 - `↑/↓` - Navigate files
-- `Enter` - Stage/unstage selected file
-- `y` - Proceed with staged files
+- `Space` - Stage/unstage selected file
+- `Enter` - Proceed with staged files
 - `Esc` - Quit
+
+**File Status Indicators:**
+- `[A]` - Added (new file)
+- `[M]` - Modified (existing file changed)
+- `[D]` - Deleted (file removed)
+
+Files are displayed as: `[S] [A] filename` where `[S]` indicates staged status and `[A]` indicates file status.
 
 ### Prefix Selection Screen  
 - `↑/↓` - Navigate options

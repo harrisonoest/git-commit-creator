@@ -92,7 +92,7 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     app.selected_file_index += 1;
                 }
             }
-            KeyCode::Enter => {
+            KeyCode::Char(' ') => {
                 if let Some(file) = app.all_files.get(app.selected_file_index) {
                     if app.staged_files_set.contains(file) {
                         let _ = crate::git::unstage_file(file);
@@ -103,7 +103,7 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     }
                 }
             }
-            KeyCode::Char('y') | KeyCode::Char('Y') => {
+            KeyCode::Enter => {
                 if app.staged_files_set.is_empty() {
                     // Don't proceed if no files are staged
                     return;
@@ -119,7 +119,7 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     app.state = AppState::PrefixSelection;
                 }
             }
-            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+            KeyCode::Esc => {
                 app.should_quit = true;
             }
             _ => {}

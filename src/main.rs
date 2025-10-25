@@ -88,6 +88,7 @@ pub struct App {
     pub branch_name: String,
     pub branch_prefix: Option<String>,
     pub filter: String,
+    pub file_statuses: std::collections::HashMap<String, git::FileStatus>,
 }
 
 impl App {
@@ -131,6 +132,7 @@ impl App {
             branch_name: String::new(),
             branch_prefix,
             filter: String::new(),
+            file_statuses: std::collections::HashMap::new(),
         };
 
         // Reset filter and selection for branch mode
@@ -210,7 +212,7 @@ async fn main() -> Result<()> {
     }
 
     git::stage_files(cli.extensions, cli.directory)?;
-    let (all_files, staged_files) = git::get_all_changed_files(&repo)?;
+    let (all_files, staged_files, file_statuses) = git::get_all_changed_files(&repo)?;
 
     if staged_files.is_empty() {
         println!("❌ No files staged. Aborting.");
@@ -234,6 +236,7 @@ async fn main() -> Result<()> {
     app.all_files = all_files;
     app.staged_files = staged_files.clone();
     app.staged_files_set = staged_files.into_iter().collect();
+    app.file_statuses = file_statuses;
 
     let result = run_app(&mut terminal, app);
 

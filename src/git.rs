@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use git2::{Repository, Status, StatusOptions};
+use std::collections::HashMap;
 use std::process::Command;
+
+type FileStatusMap = HashMap<String, FileStatus>;
 
 /// Verifies current directory is a git repository and returns Repository handle
 pub fn ensure_git_repository() -> Result<Repository> {
@@ -30,20 +33,42 @@ pub fn has_changes(repo: &Repository) -> Result<bool> {
     Ok(true)
 }
 
-/// Returns all changed files (staged and unstaged) and list of staged files
-pub fn get_all_changed_files(repo: &Repository) -> Result<(Vec<String>, Vec<String>)> {
+/// File status indicator
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileStatus {
+    Added,
+    Modified,
+    Deleted,
+}
+
+impl FileStatus {
+    pub fn as_str(&self) -> &str {
+        match self {
+            FileStatus::Added => "A",
+            FileStatus::Modified => "M",
+            FileStatus::Deleted => "D",
+        }
+    }
+}
+
+/// Returns all changed files (staged and unstaged), list of staged files, and file statuses
+pub fn get_all_changed_files(
+    repo: &Repository,
+) -> Result<(Vec<String>, Vec<String>, FileStatusMap)> {
     let mut opts = StatusOptions::new();
     opts.include_ignored(false);
 
     let statuses = repo.statuses(Some(&mut opts))?;
     let mut all_files = Vec::new();
     let mut staged_files = Vec::new();
+    let mut file_statuses = std::collections::HashMap::new();
 
     for entry in statuses.iter() {
         if let Some(path) = entry.path() {
             let path_str = path.to_string();
+            let status = entry.status();
 
-            if entry.status().intersects(
+            if status.intersects(
                 Status::WT_NEW
                     | Status::WT_MODIFIED
                     | Status::WT_DELETED
@@ -52,18 +77,25 @@ pub fn get_all_changed_files(repo: &Repository) -> Result<(Vec<String>, Vec<Stri
                     | Status::INDEX_DELETED,
             ) {
                 all_files.push(path_str.clone());
+
+                let file_status = if status.intersects(Status::WT_NEW | Status::INDEX_NEW) {
+                    FileStatus::Added
+                } else if status.intersects(Status::WT_DELETED | Status::INDEX_DELETED) {
+                    FileStatus::Deleted
+                } else {
+                    FileStatus::Modified
+                };
+                file_statuses.insert(path_str.clone(), file_status);
             }
 
-            if entry
-                .status()
-                .intersects(Status::INDEX_NEW | Status::INDEX_MODIFIED | Status::INDEX_DELETED)
+            if status.intersects(Status::INDEX_NEW | Status::INDEX_MODIFIED | Status::INDEX_DELETED)
             {
                 staged_files.push(path_str);
             }
         }
     }
 
-    Ok((all_files, staged_files))
+    Ok((all_files, staged_files, file_statuses))
 }
 
 /// Stages files based on extensions and/or directory filters

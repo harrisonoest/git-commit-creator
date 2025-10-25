@@ -42,6 +42,8 @@ pub fn render(f: &mut Frame, app: &App) {
                 .enumerate()
                 .map(|(i, f)| {
                     let is_staged = app.staged_files_set.contains(f);
+                    let status_indicator =
+                        app.file_statuses.get(f).map(|s| s.as_str()).unwrap_or("?");
                     let prefix = if is_staged { "[S]" } else { "[ ]" };
                     let style = if i == app.selected_file_index {
                         Style::default().bg(Color::Blue).fg(Color::White)
@@ -50,14 +52,14 @@ pub fn render(f: &mut Frame, app: &App) {
                     } else {
                         Style::default().fg(Color::Yellow)
                     };
-                    ListItem::new(format!("{prefix} {f}")).style(style)
+                    ListItem::new(format!("{prefix} [{status_indicator}] {f}")).style(style)
                 })
                 .collect();
 
             let files_list = List::new(items)
                 .block(
                     Block::default()
-                        .title("📁 Files (Enter to stage/unstage)")
+                        .title("📁 Files")
                         .borders(Borders::ALL),
                 )
                 .style(Style::default());
@@ -68,7 +70,7 @@ pub fn render(f: &mut Frame, app: &App) {
                     .wrap(Wrap { trim: true })
             } else {
                 Paragraph::new(
-                    "↑↓ to navigate, Enter to stage/unstage, 'y' to proceed, Esc to abort",
+                    "↑↓ to navigate, Space to stage/unstage, Enter to proceed, Esc to abort",
                 )
                 .style(Style::default().fg(Color::Yellow))
                 .wrap(Wrap { trim: true })
@@ -106,7 +108,7 @@ pub fn render(f: &mut Frame, app: &App) {
             let filter_display = if app.filter.is_empty() {
                 "Type to filter...".to_string()
             } else {
-                format!("Filter: {}", app.filter)
+                app.filter.to_string()
             };
 
             let filter_widget = Paragraph::new(filter_display)
@@ -119,7 +121,14 @@ pub fn render(f: &mut Frame, app: &App) {
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(3), Constraint::Length(3)].as_ref())
+                .constraints(
+                    [
+                        Constraint::Min(0),
+                        Constraint::Length(3),
+                        Constraint::Length(3),
+                    ]
+                    .as_ref(),
+                )
                 .split(chunks[1]);
 
             f.render_widget(list, layout[0]);
@@ -191,7 +200,14 @@ pub fn render(f: &mut Frame, app: &App) {
 
             let layout = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([Constraint::Min(0), Constraint::Length(3), Constraint::Length(3)].as_ref())
+                .constraints(
+                    [
+                        Constraint::Min(0),
+                        Constraint::Length(3),
+                        Constraint::Length(3),
+                    ]
+                    .as_ref(),
+                )
                 .split(chunks[1]);
 
             f.render_widget(list, layout[0]);
