@@ -12,6 +12,9 @@ VERSION=$1
 # Update version in Cargo.toml
 sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
 
+# Update Cargo lock with new version
+cargo build --release
+
 # Commit and tag
 git add Cargo.toml Cargo.lock
 git commit -m "chore: bump version to $VERSION"
