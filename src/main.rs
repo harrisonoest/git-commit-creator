@@ -16,6 +16,9 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use std::time::Duration;
 
+/// Cursor blink interval in milliseconds
+const CURSOR_BLINK_MS: u64 = 500;
+
 /// Command line interface configuration
 #[derive(Parser)]
 #[command(name = "gitcc")]
@@ -112,10 +115,17 @@ impl App {
 
         let cursor_pos = message.as_ref().map_or(0, |m| m.len());
 
+        // Find default prefix index if configured
+        let default_prefix_index = app_config
+            .default_commit_prefix
+            .as_ref()
+            .and_then(|default| app_config.commit_prefixes.iter().position(|p| p == default))
+            .unwrap_or(0);
+
         let mut app = Self {
             state,
             staged_files: Vec::new(),
-            selected_prefix_index: 0,
+            selected_prefix_index: default_prefix_index,
             commit_message: message.clone().unwrap_or_default(),
             should_quit: false,
             should_proceed: false,
@@ -199,7 +209,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) 
             break;
         }
 
-        if poll(Duration::from_millis(500))? {
+        if poll(Duration::from_millis(CURSOR_BLINK_MS))? {
             if let Event::Key(key) = event::read()? {
                 key_handler::handle_key(&mut app, key.code, key.modifiers);
             }
@@ -212,14 +222,37 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, mut app: App) 
     Ok(app)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+/// Sets up terminal for TUI mode, runs the provided function, then restores terminal
+fn with_terminal<F, T>(f: F) -> Result<T>
+where
+    F: FnOnce(&mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<T>,
+{
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
+    let result = f(&mut terminal);
+
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    result
+}
+
+fn main() -> Result<()> {
     let app_config = config::Config::load()?;
     let cli = Cli::parse();
 
     // Handle branch creation mode
     if cli.branch {
-        return handle_branch_creation(cli, &app_config).await;
+        return handle_branch_creation(cli, &app_config);
     }
 
     let repo = git::ensure_git_repository()?;
@@ -238,35 +271,17 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    // Determine no_push from CLI flag or config (CLI takes precedence)
+    let no_push = cli.no_push || !app_config.auto_push.unwrap_or(true);
 
-    let mut app = App::new(
-        cli.prefix,
-        cli.message,
-        cli.no_push,
-        false,
-        None,
-        &app_config,
-    );
+    let mut app = App::new(cli.prefix, cli.message, no_push, false, None, &app_config);
     app.all_files = all_files;
     app.staged_files = staged_files.clone();
     app.staged_files_set = staged_files.into_iter().collect();
     app.file_statuses = file_statuses;
     app.update_current_diff();
 
-    let result = run_app(&mut terminal, app);
-
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    let result = with_terminal(|terminal| run_app(terminal, app));
 
     match result {
         Ok(app) => {
@@ -288,7 +303,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
+fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
     git::ensure_git_repository()?;
 
     // If all branch parameters provided via CLI, create directly
@@ -304,12 +319,6 @@ async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result
     }
 
     // Otherwise, use interactive mode
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
     let mut app = App::new(None, None, false, true, cli.branch_prefix, app_config);
     if let Some(story) = cli.story {
         app.branch_story = story;
@@ -318,15 +327,7 @@ async fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result
         app.branch_name = name;
     }
 
-    let result = run_app(&mut terminal, app);
-
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    let result = with_terminal(|terminal| run_app(terminal, app));
 
     match result {
         Ok(app) => {

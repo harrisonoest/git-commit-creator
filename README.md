@@ -4,14 +4,14 @@ A beautiful command-line tool built with Rust and `ratatui` for streamlined git 
 
 ## Features
 
-- 🎨 **Beautiful TUI Interface** - Interactive terminal UI built with `ratatui`
-- 📝 **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
-- 🌿 **Branch Creation** - Create branches with conventional prefixes and story numbers
-- 🎯 **Interactive File Staging** - Navigate and selectively stage/unstage files
-- 🔍 **File Status Indicators** - See at a glance if files are Added (A), Modified (M), or Deleted (D)
-- 📋 **File Preview** - Review staged files before committing
-- ⚙️ **Configurable** - Customize commit prefixes, branch prefixes, and more via config file
-- ⚡ **Fast & Efficient** - Built in Rust for performance
+- **Beautiful TUI Interface** - Interactive terminal UI built with `ratatui`
+- **Conventional Commits** - Support for standard commit prefixes (feat, fix, docs, etc.)
+- **Branch Creation** - Create branches with conventional prefixes and story numbers
+- **Interactive File Staging** - Navigate and selectively stage/unstage files
+- **File Status Indicators** - See at a glance if files are Added (A), Modified (M), or Deleted (D)
+- **File Preview** - Review staged files before committing
+- **Configurable** - Customize commit prefixes, branch prefixes, and more via config file
+- **Fast & Efficient** - Built in Rust for performance
 
 ## Installation
 
@@ -291,7 +291,6 @@ src/
 - `crossterm` - Cross-platform terminal manipulation
 - `clap` - Command line argument parsing
 - `git2` - Git operations
-- `tokio` - Async runtime
 - `anyhow` - Error handling
 - `serde` - Configuration serialization
 - `toml` - Configuration file format

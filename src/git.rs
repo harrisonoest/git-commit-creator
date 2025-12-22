@@ -10,10 +10,10 @@ pub fn ensure_git_repository() -> Result<Repository> {
     Repository::discover(".").context("This directory is not inside a git repository")
 }
 
-/// Checks if there are any unstaged changes in the repository
+/// Checks if there are any changes (including untracked files) in the repository
 pub fn has_changes(repo: &Repository) -> Result<bool> {
     let mut opts = StatusOptions::new();
-    opts.include_ignored(false);
+    opts.include_ignored(false).include_untracked(true);
 
     let statuses = repo.statuses(Some(&mut opts))?;
 
@@ -30,7 +30,7 @@ pub fn has_changes(repo: &Repository) -> Result<bool> {
         }
     }
 
-    Ok(true)
+    Ok(false)
 }
 
 /// File status indicator
@@ -56,7 +56,7 @@ pub fn get_all_changed_files(
     repo: &Repository,
 ) -> Result<(Vec<String>, Vec<String>, FileStatusMap)> {
     let mut opts = StatusOptions::new();
-    opts.include_ignored(false);
+    opts.include_ignored(false).include_untracked(true);
 
     let statuses = repo.statuses(Some(&mut opts))?;
     let mut all_files = Vec::new();
@@ -233,22 +233,13 @@ pub fn build_branch_name(
 
 /// Creates a new branch and checks it out
 pub fn create_and_checkout_branch(branch_name: &str) -> Result<()> {
-    let output = Command::new("git").args(["branch", branch_name]).output()?;
-
-    if !output.status.success() {
-        anyhow::bail!(
-            "Failed to create branch: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-
     let output = Command::new("git")
-        .args(["checkout", branch_name])
+        .args(["checkout", "-b", branch_name])
         .output()?;
 
     if !output.status.success() {
         anyhow::bail!(
-            "Failed to checkout branch: {}",
+            "Failed to create branch: {}",
             String::from_utf8_lossy(&output.stderr)
         );
     }
@@ -291,36 +282,14 @@ pub fn get_file_diff(file_path: &str, is_staged: bool) -> Result<String> {
     if diff.trim().is_empty() {
         // For new files, show the file content
         if let Ok(content) = std::fs::read_to_string(file_path) {
-            let lines: Vec<&str> = content.lines().take(100).collect();
-            let preview = lines
-                .iter()
-                .map(|line| format!("+ {}", line))
+            return Ok(content
+                .lines()
+                .map(|line| format!("+ {line}"))
                 .collect::<Vec<_>>()
-                .join("\n");
-
-            let total_lines = content.lines().count();
-            if total_lines > 100 {
-                return Ok(format!(
-                    "{}\n... ({} more lines)",
-                    preview,
-                    total_lines - 100
-                ));
-            }
-            return Ok(preview);
+                .join("\n"));
         }
         return Ok("No changes to display".to_string());
     }
 
-    // Truncate large diffs
-    let lines: Vec<&str> = diff.lines().collect();
-    if lines.len() > 100 {
-        let truncated = lines[..100].join("\n");
-        Ok(format!(
-            "{}\n... (diff truncated, {} more lines)",
-            truncated,
-            lines.len() - 100
-        ))
-    } else {
-        Ok(diff)
-    }
+    Ok(diff)
 }

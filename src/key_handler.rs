@@ -78,6 +78,88 @@ fn find_prev_word(text: &str, cursor_pos: usize) -> usize {
     pos
 }
 
+/// Common text input handling result
+enum TextInputResult {
+    Handled,
+    Submit,
+    Cancel,
+    Unhandled,
+}
+
+/// Handles common text input operations (cursor movement, deletion, etc.)
+fn handle_text_input(
+    text: &mut String,
+    cursor_pos: &mut usize,
+    key: KeyCode,
+    modifiers: KeyModifiers,
+    allow_word_ops: bool,
+) -> TextInputResult {
+    match key {
+        KeyCode::Enter => TextInputResult::Submit,
+        KeyCode::Esc => TextInputResult::Cancel,
+        KeyCode::Char(c) => {
+            if allow_word_ops && modifiers.contains(KeyModifiers::ALT) && c == 'd' {
+                delete_word_forward(text, cursor_pos);
+            } else {
+                text.insert(*cursor_pos, c);
+                *cursor_pos += 1;
+            }
+            TextInputResult::Handled
+        }
+        KeyCode::Backspace => {
+            if allow_word_ops
+                && (modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT))
+            {
+                delete_word_backward(text, cursor_pos);
+            } else if *cursor_pos > 0 {
+                *cursor_pos -= 1;
+                text.remove(*cursor_pos);
+            }
+            TextInputResult::Handled
+        }
+        KeyCode::Delete => {
+            if allow_word_ops && modifiers.contains(KeyModifiers::CONTROL) {
+                delete_word_forward(text, cursor_pos);
+            } else if *cursor_pos < text.len() {
+                text.remove(*cursor_pos);
+            }
+            TextInputResult::Handled
+        }
+        KeyCode::Left => {
+            if allow_word_ops
+                && (modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT))
+            {
+                *cursor_pos = find_prev_word(text, *cursor_pos);
+            } else if *cursor_pos > 0 {
+                *cursor_pos -= 1;
+            }
+            TextInputResult::Handled
+        }
+        KeyCode::Right => {
+            if allow_word_ops
+                && (modifiers.contains(KeyModifiers::CONTROL)
+                    || modifiers.contains(KeyModifiers::ALT))
+            {
+                *cursor_pos = find_next_word(text, *cursor_pos);
+            } else if *cursor_pos < text.len() {
+                *cursor_pos += 1;
+            }
+            TextInputResult::Handled
+        }
+        KeyCode::Home => {
+            *cursor_pos = 0;
+            TextInputResult::Handled
+        }
+        KeyCode::End => {
+            *cursor_pos = text.len();
+            TextInputResult::Handled
+        }
+        _ => TextInputResult::Unhandled,
+    }
+}
+
 /// Handles keyboard input based on current application state
 pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
     match app.state {
@@ -120,7 +202,6 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
             }
             KeyCode::Enter => {
                 if app.staged_files_set.is_empty() {
-                    // Don't proceed if no files are staged
                     return;
                 }
                 app.should_proceed = true;
@@ -134,231 +215,133 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     app.state = AppState::PrefixSelection;
                 }
             }
-            KeyCode::Esc => {
-                app.should_quit = true;
-            }
+            KeyCode::Esc => app.should_quit = true,
             _ => {}
         },
-        AppState::PrefixSelection => match key {
-            KeyCode::Up => {
-                let filtered = app.filtered_commit_prefixes();
-                if app.selected_prefix_index > 0 {
-                    app.selected_prefix_index -= 1;
+        AppState::PrefixSelection => {
+            handle_prefix_selection(app, key, App::filtered_commit_prefixes, |app, prefix| {
+                app.prefix = Some(prefix);
+                app.selected_prefix_index = 0;
+                if app.message.is_some() {
+                    app.should_quit = true;
                 } else {
-                    app.selected_prefix_index = filtered.len().saturating_sub(1);
+                    app.state = AppState::MessageInput;
                 }
-            }
-            KeyCode::Down => {
-                let filtered = app.filtered_commit_prefixes();
-                if app.selected_prefix_index < filtered.len().saturating_sub(1) {
-                    app.selected_prefix_index += 1;
-                } else {
-                    app.selected_prefix_index = 0;
-                }
-            }
-            KeyCode::Enter => {
-                let filtered = app.filtered_commit_prefixes();
-                if !filtered.is_empty() && app.selected_prefix_index < filtered.len() {
-                    let selected_prefix = &filtered[app.selected_prefix_index];
-                    app.prefix = Some(selected_prefix.clone());
-
-                    if app.message.is_some() {
+            });
+        }
+        AppState::MessageInput => {
+            match handle_text_input(
+                &mut app.commit_message,
+                &mut app.cursor_position,
+                key,
+                modifiers,
+                true,
+            ) {
+                TextInputResult::Submit => {
+                    if !app.commit_message.trim().is_empty() {
+                        app.message = Some(app.commit_message.clone());
                         app.should_quit = true;
-                    } else {
-                        app.state = AppState::MessageInput;
                     }
                 }
+                TextInputResult::Cancel => app.should_quit = true,
+                _ => {}
             }
-            KeyCode::Char(c) => {
-                app.filter.push(c);
-                app.selected_prefix_index = 0;
-            }
-            KeyCode::Backspace => {
-                if !app.filter.is_empty() {
-                    app.filter.pop();
-                    app.selected_prefix_index = 0;
-                }
-            }
-            KeyCode::Esc => app.should_quit = true,
-            _ => {}
-        },
-        AppState::MessageInput => match key {
-            KeyCode::Enter => {
-                if !app.commit_message.trim().is_empty() {
-                    app.message = Some(app.commit_message.clone());
-                    app.should_quit = true;
-                }
-            }
-            KeyCode::Char(c) => {
-                if modifiers.contains(KeyModifiers::ALT) && c == 'd' {
-                    delete_word_forward(&mut app.commit_message, &mut app.cursor_position);
-                } else {
-                    app.commit_message.insert(app.cursor_position, c);
-                    app.cursor_position += 1;
-                }
-            }
-            KeyCode::Backspace => {
-                if modifiers.contains(KeyModifiers::CONTROL)
-                    || modifiers.contains(KeyModifiers::ALT)
-                {
-                    delete_word_backward(&mut app.commit_message, &mut app.cursor_position);
-                } else if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                    app.commit_message.remove(app.cursor_position);
-                }
-            }
-            KeyCode::Delete => {
-                if modifiers.contains(KeyModifiers::CONTROL) {
-                    delete_word_forward(&mut app.commit_message, &mut app.cursor_position);
-                } else if app.cursor_position < app.commit_message.len() {
-                    app.commit_message.remove(app.cursor_position);
-                }
-            }
-            KeyCode::Left => {
-                if modifiers.contains(KeyModifiers::CONTROL)
-                    || modifiers.contains(KeyModifiers::ALT)
-                {
-                    app.cursor_position = find_prev_word(&app.commit_message, app.cursor_position);
-                } else if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                }
-            }
-            KeyCode::Right => {
-                if modifiers.contains(KeyModifiers::CONTROL)
-                    || modifiers.contains(KeyModifiers::ALT)
-                {
-                    app.cursor_position = find_next_word(&app.commit_message, app.cursor_position);
-                } else if app.cursor_position < app.commit_message.len() {
-                    app.cursor_position += 1;
-                }
-            }
-            KeyCode::Home => {
-                app.cursor_position = 0;
-            }
-            KeyCode::End => {
-                app.cursor_position = app.commit_message.len();
-            }
-            KeyCode::Esc => app.should_quit = true,
-            _ => {}
-        },
-        AppState::BranchPrefixSelection => match key {
-            KeyCode::Up => {
-                let filtered = app.filtered_branch_prefixes();
-                if app.selected_branch_prefix_index > 0 {
-                    app.selected_branch_prefix_index -= 1;
-                } else {
-                    app.selected_branch_prefix_index = filtered.len().saturating_sub(1);
-                }
-            }
-            KeyCode::Down => {
-                let filtered = app.filtered_branch_prefixes();
-                if app.selected_branch_prefix_index < filtered.len().saturating_sub(1) {
-                    app.selected_branch_prefix_index += 1;
-                } else {
-                    app.selected_branch_prefix_index = 0;
-                }
-            }
-            KeyCode::Enter => {
-                let filtered = app.filtered_branch_prefixes();
-                if !filtered.is_empty() && app.selected_branch_prefix_index < filtered.len() {
-                    let selected_prefix = &filtered[app.selected_branch_prefix_index];
-                    app.branch_prefix = Some(selected_prefix.clone());
-                    app.state = AppState::BranchStoryInput;
-                    app.cursor_position = app.branch_story.len();
-                }
-            }
-            KeyCode::Char(c) => {
-                app.filter.push(c);
-                app.selected_branch_prefix_index = 0;
-            }
-            KeyCode::Backspace => {
-                if !app.filter.is_empty() {
-                    app.filter.pop();
-                    app.selected_branch_prefix_index = 0;
-                }
-            }
-            KeyCode::Esc => app.should_quit = true,
-            _ => {}
-        },
-        AppState::BranchStoryInput => match key {
-            KeyCode::Enter => {
-                app.state = AppState::BranchNameInput;
-                app.cursor_position = app.branch_name.len();
-            }
-            KeyCode::Char(c) if c.is_ascii_digit() => {
-                app.branch_story.insert(app.cursor_position, c);
-                app.cursor_position += 1;
-            }
-            KeyCode::Backspace => {
-                if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                    app.branch_story.remove(app.cursor_position);
-                }
-            }
-            KeyCode::Delete => {
-                if app.cursor_position < app.branch_story.len() {
-                    app.branch_story.remove(app.cursor_position);
-                }
-            }
-            KeyCode::Left => {
-                if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                }
-            }
-            KeyCode::Right => {
-                if app.cursor_position < app.branch_story.len() {
-                    app.cursor_position += 1;
-                }
-            }
-            KeyCode::Home => {
-                app.cursor_position = 0;
-            }
-            KeyCode::End => {
+        }
+        AppState::BranchPrefixSelection => {
+            handle_prefix_selection(app, key, App::filtered_branch_prefixes, |app, prefix| {
+                app.branch_prefix = Some(prefix);
+                app.state = AppState::BranchStoryInput;
                 app.cursor_position = app.branch_story.len();
-            }
-            KeyCode::Esc => app.should_quit = true,
-            _ => {}
-        },
-        AppState::BranchNameInput => match key {
-            KeyCode::Enter => {
-                if !app.branch_name.trim().is_empty() {
-                    app.should_proceed = true;
-                    app.should_quit = true;
+            });
+        }
+        AppState::BranchStoryInput => {
+            // Only allow digits for story input
+            if let KeyCode::Char(c) = key {
+                if !c.is_ascii_digit() {
+                    return;
                 }
             }
-            KeyCode::Char(c) => {
-                app.branch_name.insert(app.cursor_position, c);
-                app.cursor_position += 1;
-            }
-            KeyCode::Backspace => {
-                if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                    app.branch_name.remove(app.cursor_position);
+            match handle_text_input(
+                &mut app.branch_story,
+                &mut app.cursor_position,
+                key,
+                modifiers,
+                false,
+            ) {
+                TextInputResult::Submit => {
+                    app.state = AppState::BranchNameInput;
+                    app.cursor_position = app.branch_name.len();
                 }
+                TextInputResult::Cancel => app.should_quit = true,
+                _ => {}
             }
-            KeyCode::Delete => {
-                if app.cursor_position < app.branch_name.len() {
-                    app.branch_name.remove(app.cursor_position);
+        }
+        AppState::BranchNameInput => {
+            match handle_text_input(
+                &mut app.branch_name,
+                &mut app.cursor_position,
+                key,
+                modifiers,
+                false,
+            ) {
+                TextInputResult::Submit => {
+                    if !app.branch_name.trim().is_empty() {
+                        app.should_proceed = true;
+                        app.should_quit = true;
+                    }
                 }
+                TextInputResult::Cancel => app.should_quit = true,
+                _ => {}
             }
-            KeyCode::Left => {
-                if app.cursor_position > 0 {
-                    app.cursor_position -= 1;
-                }
+        }
+    }
+}
+
+/// Generic prefix selection handler
+fn handle_prefix_selection<F, G>(app: &mut App, key: KeyCode, get_filtered: F, on_select: G)
+where
+    F: Fn(&App) -> Vec<String>,
+    G: FnOnce(&mut App, String),
+{
+    let filtered = get_filtered(app);
+    let index = if matches!(app.state, AppState::BranchPrefixSelection) {
+        &mut app.selected_branch_prefix_index
+    } else {
+        &mut app.selected_prefix_index
+    };
+
+    match key {
+        KeyCode::Up => {
+            if *index > 0 {
+                *index -= 1;
+            } else {
+                *index = filtered.len().saturating_sub(1);
             }
-            KeyCode::Right => {
-                if app.cursor_position < app.branch_name.len() {
-                    app.cursor_position += 1;
-                }
+        }
+        KeyCode::Down => {
+            if *index < filtered.len().saturating_sub(1) {
+                *index += 1;
+            } else {
+                *index = 0;
             }
-            KeyCode::Home => {
-                app.cursor_position = 0;
+        }
+        KeyCode::Enter => {
+            if !filtered.is_empty() && *index < filtered.len() {
+                let selected = filtered[*index].clone();
+                on_select(app, selected);
             }
-            KeyCode::End => {
-                app.cursor_position = app.branch_name.len();
+        }
+        KeyCode::Char(c) => {
+            app.filter.push(c);
+            *index = 0;
+        }
+        KeyCode::Backspace => {
+            if !app.filter.is_empty() {
+                app.filter.pop();
+                *index = 0;
             }
-            KeyCode::Esc => app.should_quit = true,
-            _ => {}
-        },
+        }
+        KeyCode::Esc => app.should_quit = true,
+        _ => {}
     }
 }

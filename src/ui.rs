@@ -10,6 +10,9 @@ use ratatui::{
 
 use crate::{App, AppState};
 
+/// Minimum terminal height required to show diff panel
+const MIN_DIFF_HEIGHT: u16 = 10;
+
 /// Renders the TUI interface based on current application state
 pub fn render(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
@@ -60,7 +63,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 .collect();
 
             let files_list = List::new(items)
-                .block(Block::default().title("📁 Files").borders(Borders::ALL))
+                .block(Block::default().title("Files").borders(Borders::ALL))
                 .style(Style::default());
 
             // Format diff with color coding
@@ -103,7 +106,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             let diff_widget = Paragraph::new(diff_lines)
                 .block(
                     Block::default()
-                        .title(format!("📝 Diff: {}{}", selected_file, scroll_indicator))
+                        .title(format!("Diff: {}{}", selected_file, scroll_indicator))
                         .borders(Borders::ALL),
                 )
                 .wrap(Wrap { trim: false });
@@ -123,9 +126,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
             // Calculate file list size: number of files + 2 for borders, minimum 3 lines
             let file_list_size = (app.all_files.len() + 2).max(3) as u16;
 
-            // Check if we have enough space for diff (need at least 10 lines total)
+            // Check if we have enough space for diff
             let available_height = chunks[1].height;
-            let show_diff = available_height >= 10;
+            let show_diff = available_height >= MIN_DIFF_HEIGHT;
 
             let layout = if show_diff {
                 Layout::default()
