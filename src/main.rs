@@ -260,6 +260,11 @@ fn main() -> Result<()> {
     let app_config = config::Config::load()?;
     let cli = Cli::parse();
 
+    // Handle branch search mode
+    if let Some(query) = cli.search {
+        return handle_branch_search(query);
+    }
+
     // Handle branch creation mode
     if cli.branch {
         return handle_branch_creation(cli, &app_config);
@@ -356,6 +361,36 @@ fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
                 git::create_and_checkout_branch(&branch_name)?;
             } else {
                 println!("⏹️ Branch creation aborted by user.");
+            }
+        }
+        Err(e) => {
+            println!("❌ Error: {e}");
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_branch_search(query: String) -> Result<()> {
+    git::ensure_git_repository()?;
+
+    let all_branches = git::get_all_branches()?;
+    let matching = git::search_branches(&query, &all_branches);
+
+    let mut app = App::new(None, None, false, false, None, &config::Config::load()?);
+    app.state = AppState::BranchSearch;
+    app.search_query = query;
+    app.matching_branches = matching;
+
+    let result = with_terminal(|terminal| run_app(terminal, app));
+
+    match result {
+        Ok(app) => {
+            if app.should_proceed && !app.matching_branches.is_empty() {
+                let selected = &app.matching_branches[app.selected_branch_index];
+                git::checkout_branch(selected)?;
+            } else {
+                println!("⏹️ Branch search aborted by user.");
             }
         }
         Err(e) => {

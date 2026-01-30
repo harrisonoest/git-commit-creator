@@ -3,3 +3,5 @@
 {"payload":"task-1769800367-cdf9: Add -s/--search flag to CLI","topic":"build.task","ts":"2026-01-30T19:15:02.678352476+00:00"}
 {"payload":"task-1769800367-cdf9: Added -s/--search flag to CLI struct. cargo check: pass, cargo test: pass, cargo clippy: pass","topic":"build.done","ts":"2026-01-30T19:15:53.560447994+00:00"}
 {"payload":"task-1769800367-f958: Add TUI state and UI for branch search","topic":"build.task","ts":"2026-01-30T19:16:58.696405711+00:00"}
+{"payload":"check: pass, test: pass, clippy: pass, commit: ebd8651","topic":"build.done","ts":"2026-01-30T19:19:11.484995700+00:00"}
+{"payload":"task-1769800367-9834: Wire up branch search flow in main.rs - handle cli.search flag, call git functions, run TUI with BranchSearch state, checkout selected branch","topic":"build.task","ts":"2026-01-30T19:20:11.099575844+00:00"}
