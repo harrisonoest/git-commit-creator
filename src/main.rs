@@ -54,6 +54,9 @@ struct Cli {
 
     #[arg(long, help = "Branch name")]
     branch_name: Option<String>,
+
+    #[arg(short, long, help = "Search for branches by substring")]
+    search: Option<String>,
 }
 
 /// Application state for TUI navigation
@@ -65,9 +68,11 @@ pub enum AppState {
     BranchPrefixSelection,
     BranchStoryInput,
     BranchNameInput,
+    BranchSearch,
 }
 
 /// Main application state
+#[derive(Clone)]
 pub struct App {
     pub state: AppState,
     pub staged_files: Vec<String>,
@@ -95,6 +100,12 @@ pub struct App {
     pub current_diff: String,
     pub diff_scroll_offset: usize,
     pub diff_visible_lines: usize,
+    pub search_query: String,
+    pub matching_branches: Vec<String>,
+    pub selected_branch_index: usize,
+    pub branch_scroll_offset: usize,
+    pub branch_visible_lines: usize,
+    pub search_performed: bool,
 }
 
 impl App {
@@ -149,6 +160,12 @@ impl App {
             current_diff: String::new(),
             diff_scroll_offset: 0,
             diff_visible_lines: 0,
+            search_query: String::new(),
+            matching_branches: Vec::new(),
+            selected_branch_index: 0,
+            branch_scroll_offset: 0,
+            branch_visible_lines: 0,
+            search_performed: false,
         };
 
         // Reset filter and selection for branch mode
@@ -250,6 +267,11 @@ fn main() -> Result<()> {
     let app_config = config::Config::load()?;
     let cli = Cli::parse();
 
+    // Handle branch search mode
+    if let Some(query) = cli.search {
+        return handle_branch_search(query);
+    }
+
     // Handle branch creation mode
     if cli.branch {
         return handle_branch_creation(cli, &app_config);
@@ -350,6 +372,57 @@ fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
         }
         Err(e) => {
             println!("❌ Error: {e}");
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_branch_search(query: String) -> Result<()> {
+    git::ensure_git_repository()?;
+
+    git::update_remote_branches()?;
+    let all_branches = git::get_all_branches()?;
+    let matching = git::search_branches(&query, &all_branches);
+
+    let mut app = App::new(None, None, false, false, None, &config::Config::load()?);
+    app.state = AppState::BranchSearch;
+    app.search_query = query;
+    app.matching_branches = matching;
+    app.search_performed = true;
+
+    loop {
+        let result = with_terminal(|terminal| run_app(terminal, app.clone()));
+
+        match result {
+            Ok(mut returned_app) => {
+                if returned_app.should_quit {
+                    if returned_app.should_proceed && !returned_app.matching_branches.is_empty() {
+                        let selected =
+                            &returned_app.matching_branches[returned_app.selected_branch_index];
+                        git::checkout_branch(selected)?;
+                    } else {
+                        println!("⏹️ Branch search aborted by user.");
+                    }
+                    break;
+                } else if returned_app.should_proceed && returned_app.matching_branches.is_empty() {
+                    // Re-search with new query
+                    let new_matching =
+                        git::search_branches(&returned_app.search_query, &all_branches);
+                    returned_app.matching_branches = new_matching;
+                    returned_app.selected_branch_index = 0;
+                    returned_app.branch_scroll_offset = 0;
+                    returned_app.should_proceed = false;
+                    returned_app.search_performed = true;
+                    app = returned_app;
+                } else {
+                    break;
+                }
+            }
+            Err(e) => {
+                println!("❌ Error: {e}");
+                break;
+            }
         }
     }
 
