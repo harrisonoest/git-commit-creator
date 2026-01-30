@@ -293,3 +293,89 @@ pub fn get_file_diff(file_path: &str, is_staged: bool) -> Result<String> {
 
     Ok(diff)
 }
+
+/// Updates remote branches using git remote update
+#[allow(dead_code)]
+pub fn update_remote_branches() -> Result<()> {
+    Command::new("git")
+        .args(["remote", "update", "origin", "--prune"])
+        .output()
+        .context("Failed to update remote branches")?;
+    Ok(())
+}
+
+/// Gets all branches (local and remote)
+#[allow(dead_code)]
+pub fn get_all_branches() -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .args(["branch", "-a"])
+        .output()
+        .context("Failed to get branches")?;
+
+    let branches = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|line| {
+            let branch = line.trim();
+            if let Some(stripped) = branch.strip_prefix('*') {
+                stripped.trim().to_string()
+            } else {
+                branch.to_string()
+            }
+        })
+        .collect();
+
+    Ok(branches)
+}
+
+/// Searches branches by substring (case-insensitive)
+#[allow(dead_code)]
+pub fn search_branches(query: &str, branches: &[String]) -> Vec<String> {
+    let query_lower = query.to_lowercase();
+    branches
+        .iter()
+        .filter(|branch| {
+            if !branch.starts_with("origin/") || query_lower.starts_with("origin/") {
+                branch.to_lowercase().contains(&query_lower)
+            } else {
+                false
+            }
+        })
+        .cloned()
+        .collect()
+}
+
+/// Checks out a branch, handling remote branches by creating local tracking branches
+#[allow(dead_code)]
+pub fn checkout_branch(branch: &str) -> Result<()> {
+    let is_remote = branch.starts_with("remotes/origin/") || branch.starts_with("origin/");
+
+    if is_remote {
+        let local_branch = branch
+            .strip_prefix("remotes/origin/")
+            .or_else(|| branch.strip_prefix("origin/"))
+            .unwrap();
+
+        let check_exists = Command::new("git")
+            .args(["show-ref", "--verify", &format!("refs/heads/{local_branch}")])
+            .output()?;
+
+        if check_exists.status.success() {
+            Command::new("git")
+                .args(["checkout", local_branch])
+                .output()
+                .context("Failed to checkout branch")?;
+        } else {
+            Command::new("git")
+                .args(["checkout", "-b", local_branch, "--track", branch])
+                .output()
+                .context("Failed to create tracking branch")?;
+        }
+    } else {
+        Command::new("git")
+            .args(["checkout", branch])
+            .output()
+            .context("Failed to checkout branch")?;
+    }
+
+    Ok(())
+}
