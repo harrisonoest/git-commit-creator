@@ -5,3 +5,7 @@
 {"payload":"task-1769802044-e68c: Add scrolling support for branch search results","topic":"build.task","ts":"2026-01-30T19:46:06.977266860+00:00"}
 {"payload":"scrolling already implemented - tests: pass, check: pass, clippy: pass","topic":"build.done","ts":"2026-01-30T19:46:58.780063461+00:00"}
 {"payload":"task-1769802047-3d68: Add UI component to highlight search substring in branch results","topic":"build.task","ts":"2026-01-30T19:47:54.867121484+00:00"}
+{"payload":"check: pass, test: pass, clippy: pass - added highlight_match() function with case-insensitive substring highlighting in cyan/bold/underlined","topic":"build.done","ts":"2026-01-30T19:49:31.195178417+00:00"}
+{"payload":"task-1769802047-3d68: Add UI component to highlight search substring in branch search results","topic":"build.task","ts":"2026-01-30T19:50:07.410904107+00:00"}
+{"payload":"Feature already implemented: highlight_match function exists and is used in branch search results. Tests: pass, lint: pass, typecheck: pass","topic":"build.done","ts":"2026-01-30T19:50:52.763011818+00:00"}
+{"payload":"Fix no-results-found state: when matching_branches is empty after search, allow user to enter new query and re-search, or press Esc to exit. Task ID: task-1769802051-bb2b","topic":"build.task","ts":"2026-01-30T19:52:18.875198227+00:00"}

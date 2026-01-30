@@ -3,5 +3,5 @@
 {"id":"task-1769800367-f958","title":"Add TUI state and UI for branch search/selection","status":"closed","priority":1,"blocked_by":[],"created":"2026-01-30T19:12:47.260445049+00:00","closed":"2026-01-30T19:22:24.874849819+00:00"}
 {"id":"task-1769800367-9834","title":"Wire up branch search flow in main.rs","status":"closed","priority":1,"blocked_by":[],"created":"2026-01-30T19:12:47.366645602+00:00","closed":"2026-01-30T19:22:29.225328772+00:00"}
 {"id":"task-1769802044-e68c","title":"Add scrolling support for branch search results when they exceed window height","status":"closed","priority":1,"blocked_by":[],"created":"2026-01-30T19:40:44.845453401+00:00","closed":"2026-01-30T19:46:55.034615031+00:00"}
-{"id":"task-1769802047-3d68","title":"Add UI component to highlight search substring in branch results","status":"open","priority":1,"blocked_by":[],"created":"2026-01-30T19:40:47.867692553+00:00"}
+{"id":"task-1769802047-3d68","title":"Add UI component to highlight search substring in branch results","status":"closed","priority":1,"blocked_by":[],"created":"2026-01-30T19:40:47.867692553+00:00","closed":"2026-01-30T19:52:14.558384216+00:00"}
 {"id":"task-1769802051-bb2b","title":"Fix no-results-found state to allow user to retry search or exit","status":"open","priority":1,"blocked_by":[],"created":"2026-01-30T19:40:51.506669670+00:00"}

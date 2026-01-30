@@ -72,6 +72,7 @@ pub enum AppState {
 }
 
 /// Main application state
+#[derive(Clone)]
 pub struct App {
     pub state: AppState,
     pub staged_files: Vec<String>,
@@ -104,6 +105,7 @@ pub struct App {
     pub selected_branch_index: usize,
     pub branch_scroll_offset: usize,
     pub branch_visible_lines: usize,
+    pub search_performed: bool,
 }
 
 impl App {
@@ -163,6 +165,7 @@ impl App {
             selected_branch_index: 0,
             branch_scroll_offset: 0,
             branch_visible_lines: 0,
+            search_performed: false,
         };
 
         // Reset filter and selection for branch mode
@@ -385,20 +388,38 @@ fn handle_branch_search(query: String) -> Result<()> {
     app.state = AppState::BranchSearch;
     app.search_query = query;
     app.matching_branches = matching;
+    app.search_performed = true;
 
-    let result = with_terminal(|terminal| run_app(terminal, app));
+    loop {
+        let result = with_terminal(|terminal| run_app(terminal, app.clone()));
 
-    match result {
-        Ok(app) => {
-            if app.should_proceed && !app.matching_branches.is_empty() {
-                let selected = &app.matching_branches[app.selected_branch_index];
-                git::checkout_branch(selected)?;
-            } else {
-                println!("⏹️ Branch search aborted by user.");
+        match result {
+            Ok(mut returned_app) => {
+                if returned_app.should_quit {
+                    if returned_app.should_proceed && !returned_app.matching_branches.is_empty() {
+                        let selected = &returned_app.matching_branches[returned_app.selected_branch_index];
+                        git::checkout_branch(selected)?;
+                    } else {
+                        println!("⏹️ Branch search aborted by user.");
+                    }
+                    break;
+                } else if returned_app.should_proceed && returned_app.matching_branches.is_empty() {
+                    // Re-search with new query
+                    let new_matching = git::search_branches(&returned_app.search_query, &all_branches);
+                    returned_app.matching_branches = new_matching;
+                    returned_app.selected_branch_index = 0;
+                    returned_app.branch_scroll_offset = 0;
+                    returned_app.should_proceed = false;
+                    returned_app.search_performed = true;
+                    app = returned_app;
+                } else {
+                    break;
+                }
             }
-        }
-        Err(e) => {
-            println!("❌ Error: {e}");
+            Err(e) => {
+                println!("❌ Error: {e}");
+                break;
+            }
         }
     }
 

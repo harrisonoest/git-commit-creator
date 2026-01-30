@@ -304,9 +304,7 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     false,
                 ) {
                     TextInputResult::Submit => {
-                        if !app.search_query.trim().is_empty() {
-                            app.should_proceed = true;
-                        }
+                        app.should_proceed = true;
                     }
                     TextInputResult::Cancel => app.should_quit = true,
                     _ => {}

@@ -399,12 +399,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 } else {
                     app.search_query.clone()
                 };
+                
+                let title = if app.search_performed {
+                    "No results found - Enter new search query"
+                } else {
+                    "Search for branch by substring"
+                };
+                
                 let input = Paragraph::new(query_with_cursor)
                     .style(Style::default().fg(Color::Yellow))
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
-                            .title("Search for branch by substring"),
+                            .title(title),
                     );
 
                 let help = Paragraph::new("Enter search query, Enter to search, Esc to quit")
