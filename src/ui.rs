@@ -357,5 +357,76 @@ pub fn render(f: &mut Frame, app: &mut App) {
             f.render_widget(input, layout[0]);
             f.render_widget(help, layout[1]);
         }
+        AppState::BranchSearch => {
+            if app.matching_branches.is_empty() {
+                let query_with_cursor = if app.cursor_visible {
+                    let mut chars: Vec<char> = app.search_query.chars().collect();
+                    chars.insert(app.cursor_position, '_');
+                    chars.into_iter().collect()
+                } else {
+                    app.search_query.clone()
+                };
+                let input = Paragraph::new(query_with_cursor)
+                    .style(Style::default().fg(Color::Yellow))
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title("Search for branch by substring"),
+                    );
+
+                let help = Paragraph::new("Enter search query, Enter to search, Esc to quit")
+                    .style(Style::default().fg(Color::Yellow))
+                    .wrap(Wrap { trim: true });
+
+                let layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Length(3)].as_ref())
+                    .split(chunks[1]);
+
+                f.render_widget(input, layout[0]);
+                f.render_widget(help, layout[1]);
+            } else {
+                let items: Vec<ListItem> = app
+                    .matching_branches
+                    .iter()
+                    .enumerate()
+                    .map(|(i, branch)| {
+                        let simplified = branch
+                            .trim_start_matches("remotes/")
+                            .trim_start_matches("origin/");
+                        let content = if i == app.selected_branch_index {
+                            format!("→ {}", simplified)
+                        } else {
+                            format!("  {}", simplified)
+                        };
+                        ListItem::new(content).style(if i == app.selected_branch_index {
+                            Style::default()
+                                .fg(Color::Yellow)
+                                .add_modifier(Modifier::BOLD)
+                        } else {
+                            Style::default()
+                        })
+                    })
+                    .collect();
+
+                let list = List::new(items).block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title("Select branch to checkout"),
+                );
+
+                let help = Paragraph::new("↑/↓ to navigate, Enter to checkout, Esc to quit")
+                    .style(Style::default().fg(Color::Yellow))
+                    .wrap(Wrap { trim: true });
+
+                let layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
+                    .split(chunks[1]);
+
+                f.render_widget(list, layout[0]);
+                f.render_widget(help, layout[1]);
+            }
+        }
     }
 }

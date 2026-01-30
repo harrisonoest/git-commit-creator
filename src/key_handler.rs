@@ -294,6 +294,44 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 _ => {}
             }
         }
+        AppState::BranchSearch => {
+            if app.matching_branches.is_empty() {
+                match handle_text_input(
+                    &mut app.search_query,
+                    &mut app.cursor_position,
+                    key,
+                    modifiers,
+                    false,
+                ) {
+                    TextInputResult::Submit => {
+                        if !app.search_query.trim().is_empty() {
+                            app.should_proceed = true;
+                        }
+                    }
+                    TextInputResult::Cancel => app.should_quit = true,
+                    _ => {}
+                }
+            } else {
+                match key {
+                    KeyCode::Up => {
+                        if app.selected_branch_index > 0 {
+                            app.selected_branch_index -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if app.selected_branch_index < app.matching_branches.len() - 1 {
+                            app.selected_branch_index += 1;
+                        }
+                    }
+                    KeyCode::Enter => {
+                        app.should_proceed = true;
+                        app.should_quit = true;
+                    }
+                    KeyCode::Esc => app.should_quit = true,
+                    _ => {}
+                }
+            }
+        }
     }
 }
 

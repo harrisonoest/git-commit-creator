@@ -68,6 +68,7 @@ pub enum AppState {
     BranchPrefixSelection,
     BranchStoryInput,
     BranchNameInput,
+    BranchSearch,
 }
 
 /// Main application state
@@ -98,6 +99,9 @@ pub struct App {
     pub current_diff: String,
     pub diff_scroll_offset: usize,
     pub diff_visible_lines: usize,
+    pub search_query: String,
+    pub matching_branches: Vec<String>,
+    pub selected_branch_index: usize,
 }
 
 impl App {
@@ -152,6 +156,9 @@ impl App {
             current_diff: String::new(),
             diff_scroll_offset: 0,
             diff_visible_lines: 0,
+            search_query: String::new(),
+            matching_branches: Vec::new(),
+            selected_branch_index: 0,
         };
 
         // Reset filter and selection for branch mode
