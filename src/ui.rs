@@ -386,10 +386,19 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 f.render_widget(input, layout[0]);
                 f.render_widget(help, layout[1]);
             } else {
+                let layout = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
+                    .split(chunks[1]);
+
+                app.branch_visible_lines = layout[0].height.saturating_sub(2) as usize;
+
                 let items: Vec<ListItem> = app
                     .matching_branches
                     .iter()
                     .enumerate()
+                    .skip(app.branch_scroll_offset)
+                    .take(app.branch_visible_lines)
                     .map(|(i, branch)| {
                         let simplified = branch
                             .trim_start_matches("remotes/")
@@ -419,14 +428,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     .style(Style::default().fg(Color::Yellow))
                     .wrap(Wrap { trim: true });
 
-                let layout = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
-                    .split(chunks[1]);
-
-                app.branch_visible_lines = layout[0].height.saturating_sub(2) as usize;
-
-                let mut list_state = ListState::default().with_selected(Some(app.selected_branch_index));
+                let relative_index = app.selected_branch_index.saturating_sub(app.branch_scroll_offset);
+                let mut list_state = ListState::default().with_selected(Some(relative_index));
                 f.render_stateful_widget(list, layout[0], &mut list_state);
                 f.render_widget(help, layout[1]);
             }
