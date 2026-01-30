@@ -381,6 +381,7 @@ fn handle_branch_creation(cli: Cli, app_config: &config::Config) -> Result<()> {
 fn handle_branch_search(query: String) -> Result<()> {
     git::ensure_git_repository()?;
 
+    git::update_remote_branches()?;
     let all_branches = git::get_all_branches()?;
     let matching = git::search_branches(&query, &all_branches);
 
@@ -397,7 +398,8 @@ fn handle_branch_search(query: String) -> Result<()> {
             Ok(mut returned_app) => {
                 if returned_app.should_quit {
                     if returned_app.should_proceed && !returned_app.matching_branches.is_empty() {
-                        let selected = &returned_app.matching_branches[returned_app.selected_branch_index];
+                        let selected =
+                            &returned_app.matching_branches[returned_app.selected_branch_index];
                         git::checkout_branch(selected)?;
                     } else {
                         println!("⏹️ Branch search aborted by user.");
@@ -405,7 +407,8 @@ fn handle_branch_search(query: String) -> Result<()> {
                     break;
                 } else if returned_app.should_proceed && returned_app.matching_branches.is_empty() {
                     // Re-search with new query
-                    let new_matching = git::search_branches(&returned_app.search_query, &all_branches);
+                    let new_matching =
+                        git::search_branches(&returned_app.search_query, &all_branches);
                     returned_app.matching_branches = new_matching;
                     returned_app.selected_branch_index = 0;
                     returned_app.branch_scroll_offset = 0;

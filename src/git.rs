@@ -295,7 +295,6 @@ pub fn get_file_diff(file_path: &str, is_staged: bool) -> Result<String> {
 }
 
 /// Updates remote branches using git remote update
-#[allow(dead_code)]
 pub fn update_remote_branches() -> Result<()> {
     Command::new("git")
         .args(["remote", "update", "origin", "--prune"])
@@ -305,7 +304,6 @@ pub fn update_remote_branches() -> Result<()> {
 }
 
 /// Gets all branches (local and remote)
-#[allow(dead_code)]
 pub fn get_all_branches() -> Result<Vec<String>> {
     let output = Command::new("git")
         .args(["branch", "-a"])
@@ -328,7 +326,6 @@ pub fn get_all_branches() -> Result<Vec<String>> {
 }
 
 /// Searches branches by substring (case-insensitive)
-#[allow(dead_code)]
 pub fn search_branches(query: &str, branches: &[String]) -> Vec<String> {
     let query_lower = query.to_lowercase();
     branches
@@ -345,7 +342,6 @@ pub fn search_branches(query: &str, branches: &[String]) -> Vec<String> {
 }
 
 /// Checks out a branch, handling remote branches by creating local tracking branches
-#[allow(dead_code)]
 pub fn checkout_branch(branch: &str) -> Result<()> {
     let is_remote = branch.starts_with("remotes/origin/") || branch.starts_with("origin/");
 
@@ -356,7 +352,11 @@ pub fn checkout_branch(branch: &str) -> Result<()> {
             .unwrap();
 
         let check_exists = Command::new("git")
-            .args(["show-ref", "--verify", &format!("refs/heads/{local_branch}")])
+            .args([
+                "show-ref",
+                "--verify",
+                &format!("refs/heads/{local_branch}"),
+            ])
             .output()?;
 
         if check_exists.status.success() {

@@ -19,13 +19,13 @@ fn highlight_match<'a>(text: &'a str, query: &str) -> Line<'a> {
     if query.is_empty() {
         return Line::from(text.to_string());
     }
-    
+
     let lower_text = text.to_lowercase();
     let lower_query = query.to_lowercase();
-    
+
     let mut spans = Vec::new();
     let mut last_end = 0;
-    
+
     for (idx, _) in lower_text.match_indices(&lower_query) {
         if idx > last_end {
             spans.push(Span::raw(text[last_end..idx].to_string()));
@@ -38,11 +38,11 @@ fn highlight_match<'a>(text: &'a str, query: &str) -> Line<'a> {
         ));
         last_end = idx + query.len();
     }
-    
+
     if last_end < text.len() {
         spans.push(Span::raw(text[last_end..].to_string()));
     }
-    
+
     Line::from(spans)
 }
 
@@ -399,20 +399,16 @@ pub fn render(f: &mut Frame, app: &mut App) {
                 } else {
                     app.search_query.clone()
                 };
-                
+
                 let title = if app.search_performed {
                     "No results found - Enter new search query"
                 } else {
                     "Search for branch by substring"
                 };
-                
+
                 let input = Paragraph::new(query_with_cursor)
                     .style(Style::default().fg(Color::Yellow))
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .title(title),
-                    );
+                    .block(Block::default().borders(Borders::ALL).title(title));
 
                 let help = Paragraph::new("Enter search query, Enter to search, Esc to quit")
                     .style(Style::default().fg(Color::Yellow))
@@ -446,10 +442,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
                         let is_selected = i == app.selected_branch_index;
                         let prefix = if is_selected { "→ " } else { "  " };
                         let highlighted = highlight_match(simplified, &app.search_query);
-                        
+
                         let mut line_spans = vec![Span::raw(prefix)];
                         line_spans.extend(highlighted.spans);
-                        
+
                         ListItem::new(Line::from(line_spans)).style(if is_selected {
                             Style::default()
                                 .fg(Color::Yellow)
@@ -470,7 +466,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     .style(Style::default().fg(Color::Yellow))
                     .wrap(Wrap { trim: true });
 
-                let relative_index = app.selected_branch_index.saturating_sub(app.branch_scroll_offset);
+                let relative_index = app
+                    .selected_branch_index
+                    .saturating_sub(app.branch_scroll_offset);
                 let mut list_state = ListState::default().with_selected(Some(relative_index));
                 f.render_stateful_widget(list, layout[0], &mut list_state);
                 f.render_widget(help, layout[1]);

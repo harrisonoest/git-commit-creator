@@ -324,7 +324,9 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                             app.selected_branch_index += 1;
                             let max_visible = app.branch_scroll_offset + app.branch_visible_lines;
                             if app.selected_branch_index >= max_visible {
-                                app.branch_scroll_offset = app.selected_branch_index.saturating_sub(app.branch_visible_lines - 1);
+                                app.branch_scroll_offset = app
+                                    .selected_branch_index
+                                    .saturating_sub(app.branch_visible_lines - 1);
                             }
                         }
                     }
