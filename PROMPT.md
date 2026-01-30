@@ -1,1 +1,5 @@
-I want you to take the Python script, `git_branch_search.py` and add this functionality to the current Rust project. The user should be able to run `gitcc -s {branch substring}` at the end and the functionality should be the same.
+You need to fix the following issues with the current implementation of the branch-searching functionality:
+
+- The results should scroll if the number of results exceeds the result window
+- There should be some UI component to highlight what the substring was; whether that be highlighting the substring in the results list, or showing it somewhere else in the UI
+- If the user enters a substring that is not found, they are stuck on the TUI prompting them to enter a substring 

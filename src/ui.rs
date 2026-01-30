@@ -2,8 +2,8 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     widgets::{
-        Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
-        Wrap,
+        Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Wrap,
     },
     Frame,
 };
@@ -424,7 +424,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     .constraints([Constraint::Min(5), Constraint::Length(3)].as_ref())
                     .split(chunks[1]);
 
-                f.render_widget(list, layout[0]);
+                app.branch_visible_lines = layout[0].height.saturating_sub(2) as usize;
+
+                let mut list_state = ListState::default().with_selected(Some(app.selected_branch_index));
+                f.render_stateful_widget(list, layout[0], &mut list_state);
                 f.render_widget(help, layout[1]);
             }
         }

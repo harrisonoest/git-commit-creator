@@ -102,6 +102,8 @@ pub struct App {
     pub search_query: String,
     pub matching_branches: Vec<String>,
     pub selected_branch_index: usize,
+    pub branch_scroll_offset: usize,
+    pub branch_visible_lines: usize,
 }
 
 impl App {
@@ -159,6 +161,8 @@ impl App {
             search_query: String::new(),
             matching_branches: Vec::new(),
             selected_branch_index: 0,
+            branch_scroll_offset: 0,
+            branch_visible_lines: 0,
         };
 
         // Reset filter and selection for branch mode

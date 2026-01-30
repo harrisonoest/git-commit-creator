@@ -316,11 +316,18 @@ pub fn handle_key(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     KeyCode::Up => {
                         if app.selected_branch_index > 0 {
                             app.selected_branch_index -= 1;
+                            if app.selected_branch_index < app.branch_scroll_offset {
+                                app.branch_scroll_offset = app.selected_branch_index;
+                            }
                         }
                     }
                     KeyCode::Down => {
                         if app.selected_branch_index < app.matching_branches.len() - 1 {
                             app.selected_branch_index += 1;
+                            let max_visible = app.branch_scroll_offset + app.branch_visible_lines;
+                            if app.selected_branch_index >= max_visible {
+                                app.branch_scroll_offset = app.selected_branch_index.saturating_sub(app.branch_visible_lines - 1);
+                            }
                         }
                     }
                     KeyCode::Enter => {
