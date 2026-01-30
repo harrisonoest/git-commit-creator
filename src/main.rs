@@ -54,6 +54,9 @@ struct Cli {
 
     #[arg(long, help = "Branch name")]
     branch_name: Option<String>,
+
+    #[arg(short, long, help = "Search for branches by substring")]
+    search: Option<String>,
 }
 
 /// Application state for TUI navigation

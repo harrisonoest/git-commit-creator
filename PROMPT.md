@@ -1,0 +1,1 @@
+I want you to take the Python script, `git_branch_search.py` and add this functionality to the current Rust project. The user should be able to run `gitcc -s {branch substring}` at the end and the functionality should be the same.
