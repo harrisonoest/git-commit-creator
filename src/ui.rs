@@ -1,6 +1,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
+    text::{Line, Span},
     widgets::{
         Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Wrap,
@@ -12,6 +13,38 @@ use crate::{App, AppState};
 
 /// Minimum terminal height required to show diff panel
 const MIN_DIFF_HEIGHT: u16 = 10;
+
+/// Highlights search query substring in text with case-insensitive matching
+fn highlight_match<'a>(text: &'a str, query: &str) -> Line<'a> {
+    if query.is_empty() {
+        return Line::from(text.to_string());
+    }
+    
+    let lower_text = text.to_lowercase();
+    let lower_query = query.to_lowercase();
+    
+    let mut spans = Vec::new();
+    let mut last_end = 0;
+    
+    for (idx, _) in lower_text.match_indices(&lower_query) {
+        if idx > last_end {
+            spans.push(Span::raw(text[last_end..idx].to_string()));
+        }
+        spans.push(Span::styled(
+            text[idx..idx + query.len()].to_string(),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+        ));
+        last_end = idx + query.len();
+    }
+    
+    if last_end < text.len() {
+        spans.push(Span::raw(text[last_end..].to_string()));
+    }
+    
+    Line::from(spans)
+}
 
 /// Renders the TUI interface based on current application state
 pub fn render(f: &mut Frame, app: &mut App) {
@@ -403,12 +436,14 @@ pub fn render(f: &mut Frame, app: &mut App) {
                         let simplified = branch
                             .trim_start_matches("remotes/")
                             .trim_start_matches("origin/");
-                        let content = if i == app.selected_branch_index {
-                            format!("→ {}", simplified)
-                        } else {
-                            format!("  {}", simplified)
-                        };
-                        ListItem::new(content).style(if i == app.selected_branch_index {
+                        let is_selected = i == app.selected_branch_index;
+                        let prefix = if is_selected { "→ " } else { "  " };
+                        let highlighted = highlight_match(simplified, &app.search_query);
+                        
+                        let mut line_spans = vec![Span::raw(prefix)];
+                        line_spans.extend(highlighted.spans);
+                        
+                        ListItem::new(Line::from(line_spans)).style(if is_selected {
                             Style::default()
                                 .fg(Color::Yellow)
                                 .add_modifier(Modifier::BOLD)

@@ -1,3 +1,7 @@
 {"payload":"task-1769802044-e68c: Add scrolling support for branch search results when they exceed window height","topic":"build.task","ts":"2026-01-30T19:40:55.084730614+00:00"}
 {"payload":"tests: pass, lint: pass, typecheck: pass","topic":"build.done","ts":"2026-01-30T19:43:17.155855356+00:00"}
 {"payload":"task-1769802044-e68c: Verify and fix scrolling for branch search results. The scroll offset is calculated in key_handler but may not be properly applied in UI. Test with many results.","topic":"build.task","ts":"2026-01-30T19:44:27.689579652+00:00"}
+{"payload":"check: pass, test: pass, clippy: pass - Fixed branch search scrolling by applying scroll offset to visible items and converting selected index to relative position","topic":"build.done","ts":"2026-01-30T19:45:36.391874010+00:00"}
+{"payload":"task-1769802044-e68c: Add scrolling support for branch search results","topic":"build.task","ts":"2026-01-30T19:46:06.977266860+00:00"}
+{"payload":"scrolling already implemented - tests: pass, check: pass, clippy: pass","topic":"build.done","ts":"2026-01-30T19:46:58.780063461+00:00"}
+{"payload":"task-1769802047-3d68: Add UI component to highlight search substring in branch results","topic":"build.task","ts":"2026-01-30T19:47:54.867121484+00:00"}
